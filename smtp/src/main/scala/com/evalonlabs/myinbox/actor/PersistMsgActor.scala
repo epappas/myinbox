@@ -6,8 +6,8 @@ import com.typesafe.scalalogging.slf4j.Logging
 import java.util.Date
 import com.evalonlabs.myinbox.util._
 import scala.language.postfixOps
-import com.evalonlabs.myinbox.model.Message
 import com.evalonlabs.myinbox.b2b.Sender
+import com.evalonlabs.myinbox.model.Message
 
 class PersistMsgActor extends Actor with Logging {
 
@@ -26,7 +26,9 @@ class PersistMsgActor extends Actor with Logging {
         Inbox.add(messageID, message.from, message.to, message.subject, compressed, sentDate)
         Inbox.index(messageID, message.from, message.to, message.subject, cleanMessage, sentDate)
         Sender.index(message.from, message.inet)
-        SmtpAkkaSystem.userPrefsActor ! message
+
+        SmtpAkkaSystem.userPrefsActor ! (messageID, message)
+
         // TODO - notify next services
       }
       catch {
