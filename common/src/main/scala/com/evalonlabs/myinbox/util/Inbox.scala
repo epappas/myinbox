@@ -5,15 +5,19 @@ import java.util.Date
 
 object Inbox extends Object with Redis {
 
-  def add(sender: String, recipient: String, subject: String, gzipMsg: String, date: Date) {
+  def add(messageID: String, sender: String, recipient: String, subject: String, gzipMsg: String, date: Date) {
     // TODO
   }
 
-  def index(sender: String, recipient: String, subject: String, msg: String, date: Date) {
+  def index(messageID: String, sender: String, recipient: String, subject: String, msg: String, date: Date) {
     // TODO
   }
 
   def categorize(uKey: String, messageId: String, category: String) {
+    // TODO
+  }
+
+  def tag(uKey: String, messageId: String, tag: String) {
     // TODO
   }
 }
