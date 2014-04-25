@@ -57,4 +57,10 @@ object Mail extends Object {
     msg.writeTo(baos)
     Compress.zip(baos.toString("UTF-8"))
   }
+
+  def toBytes(msg: MimeMessage): Array[Byte] = {
+    val baos = new ByteArrayOutputStream()
+    msg.writeTo(baos)
+    baos.toByteArray
+  }
 }
