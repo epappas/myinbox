@@ -1,7 +1,6 @@
 package com.evalonlabs.myinbox.smtp
 
 import org.subethamail.smtp.{RejectException, DropConnectionException, MessageHandler, MessageContext}
-import com.typesafe.scalalogging.slf4j.Logging
 import java.io.InputStream
 import java.net.InetSocketAddress
 import java.util.{Properties, Date}
@@ -17,16 +16,17 @@ import javax.mail.Session
 import javax.mail.internet.MimeMessage
 import com.evalonlabs.myinbox.model.Greylist
 import com.evalonlabs.myinbox.model.GoNext
-import scala.Some
 import com.evalonlabs.myinbox.model.AliasAddr
 import com.evalonlabs.myinbox.model.Reject
+import java.util.concurrent.atomic.AtomicReference
+import com.evalonlabs.myinbox.monitoring.Logging
 
 class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Logging {
 
   val inet = ctx.getRemoteAddress.asInstanceOf[InetSocketAddress].getAddress
   val ip = inet.getHostAddress
-  var sender: Option[String] = None
-  var recip: Option[String] = None
+  val sender: AtomicReference[String] = new AtomicReference[String]()
+  val recip: AtomicReference[String] = new AtomicReference[String]()
   val timestamp = new Date().getTime
   val delay = SafeConfig.getMilliseconds("myinbox.server.command-delay").getOrElse(10000L)
 
@@ -41,13 +41,11 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
     implicit val timeout = Timeout(2 minutes)
     val future = SmtpAkkaSystem.senderCheckActor ?(inet, helo, from)
     Await.result(future, 2 minutes) match {
-      case GoNext() => sender = Some(from)
+      case GoNext() => sender.lazySet(from)
       case Reject(reason) =>
         logger warn ("Reject ip: " + ip + " helo: " + helo + " from: " + from + " reason: " + reason)
-        SmtpAkkaSystem.metricsActor ! Blocked
         throw new DropConnectionException(reason)
       case Greylist(reason) =>
-        SmtpAkkaSystem.metricsActor ! Blocked
         throw new DropConnectionException(421, reason)
       case _ => throw new Exception("Error in processing.")
     }
@@ -56,16 +54,15 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
 
   def recipient(addr: String) {
 
-    logger debug "To: " + to
+    logger debug "To: " + addr
 
     implicit val timeout = Timeout(2 minutes)
     val future = SmtpAkkaSystem.recipientCheckActor ? (inet, sender.get, addr)
     Await.result(future, 2 minutes) match {
-      case AliasAddr(userAddr) => recip = Some(userAddr)
-      case GoNext() => recip = Some(addr)
+      case AliasAddr(userAddr) => recip.lazySet(userAddr)
+      case GoNext() => recip.lazySet(addr)
       case Reject(reason) =>
         logger warn ("Reject recipient ip: " + ip + " to: " + addr + " reason: " + reason)
-        SmtpAkkaSystem.metricsActor ! Blocked
         throw new RejectException(reason)
     }
   }
@@ -76,7 +73,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
     val message = new MimeMessage(session, data)
 
     implicit val timeout = Timeout(2 minutes)
-    val future = SmtpAkkaSystem.messageCheckActor ? Message[MimeMessage](inet, sender.get, recip, message.getSubject, message)
+    val future = SmtpAkkaSystem.messageCheckActor ? Message[MimeMessage](inet, sender.get, recip.get, message.getSubject, message)
     Await.result(future, 2 minutes) match {
       case msg: Message[MimeMessage] =>
         val userFilter = SmtpAkkaSystem.userFilterActor ? msg
