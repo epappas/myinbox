@@ -5,10 +5,11 @@ object User {
 
   def getEncryptionKey(uKey: String): String = {
     // TODO get user's key from storage and return, block while waiting
+    ""
   }
 
   def getUKey(mailAddr: String): String = {
-    Crypto.md5(mailAddr)
+    Crypto.md5(mailAddr).toString
   }
 
   def addressFromAlias(alias: String): String = {
@@ -23,8 +24,8 @@ object User {
 
     val modPass = (0 to loop).foldLeft[String](pass: String)((pass: String, index: Int) => {
       index % 2 match {
-        case 0 => Crypto.md5(pass)
-        case _ => Crypto.sha1(pass)
+        case 0 => Crypto.md5(pass).toString
+        case _ => Crypto.sha1(pass).toString
       }
     })
 

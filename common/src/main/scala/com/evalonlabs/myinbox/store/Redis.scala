@@ -22,7 +22,7 @@ trait Redis {
     redis.publish(channel, message)
   }
 
-  def subscribe(channel: String): Any = {
-    newRedis(redisHost, redisPort).subscribe(channel)
-  }
+//  def subscribe(channel: String): Any = {
+//    newRedis(redisHost, redisPort).subscribe(channel)
+//  }
 }

@@ -49,7 +49,7 @@ abstract class NettyServer(name: String, port: Integer)(initializer: (SocketChan
     }
   }
 
-  private def onStart(bootstrap: ServerBootstrap)
+  protected def onStart(bootstrap: ServerBootstrap)
 
   protected def onStop(f: => Any)
 

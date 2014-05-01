@@ -5,6 +5,7 @@ import javax.mail.{BodyPart, Multipart}
 import java.io.ByteArrayOutputStream
 import scala.collection.mutable.ArrayBuffer
 import scala.Predef.String
+import scala.collection.immutable.Range.Int
 
 object Mail extends Object {
 
@@ -17,19 +18,19 @@ object Mail extends Object {
         val mpart = msg.getContent.asInstanceOf[Multipart]
         val partList = ArrayBuffer[BodyPart]()
 
-        for(i <- 0 to (mpart.getCount-1)) {
+        Range(0, mpart.getCount-1).foreach((i) => {
           val targetPart = mpart.getBodyPart(i)
 
           targetPart.getContentType match {
-            case _: String if _.contains("multipart") => {
+            case x: String if x.contains("multipart") => {
               val innerMpart = targetPart.getContent.asInstanceOf[Multipart]
               val list = ArrayBuffer[BodyPart]()
 
-              for(j <- 0 to (innerMpart.getCount-1)) {
+              Range(0, innerMpart.getCount-1).foreach((j) => {
                 val subpart = innerMpart.getBodyPart(j)
-                println("subpart " + j + ": " + subpart.getContentType)
+                //("subpart " + j + ": " + subpart.getContentType)
                 list.append(subpart)
-              }
+              })
 
               list.filter(!_.isMimeType("text/*")).foreach(innerMpart.removeBodyPart)
 
@@ -37,10 +38,11 @@ object Mail extends Object {
             }
             case _ => partList.append(targetPart)
           }
-        }
 
-        partList.filter(!_.isMimeType("text/*") && !_.isMimeType("multipart/*"))
-          .foreach(mpart.removeBodyPart(_))
+        })
+        // TODO
+//        partList.filter(!_.isMimeType("text/*") && !_.isMimeType("multipart/*"))
+//          .foreach(mpart.removeBodyPart(_))
         
         msg.setContent(mpart)
         msg.saveChanges()
