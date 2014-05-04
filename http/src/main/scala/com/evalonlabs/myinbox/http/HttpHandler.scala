@@ -32,17 +32,17 @@ class HttpHandler(system: ContextSystem) extends SimpleChannelInboundHandler[Any
             this.normalizedParams.put(entry.getKey, entry.getValue.get(0))
           }
         }
+        try {
+          handleReq(ctx, this.decoder.path, this.request)
+        }
+        catch {
+          case e: Exception =>
+            e.printStackTrace()
+            HttpResponse.sendError(ctx, "{\"status\":\"500\", \"message\": \"" + e + "\"}")
+        }
       case msg: LastHttpContent =>
         try {
-          val path: String = this.decoder.path
-          this.request.getMethod.name match {
-            case "GET" => Routes.get(system, path).handle(ctx, path, normalizedParams, this.request)
-            case "POST" => Routes.post(system, path).handle(ctx, path, normalizedParams, this.request)
-            case "PUT" => Routes.put(system, path).handle(ctx, path, normalizedParams, this.request)
-            case "OPTIONS" => Routes.options(system, path).handle(ctx, path, normalizedParams, this.request)
-            case "DELETE" => Routes.delete(system, path).handle(ctx, path, normalizedParams, this.request)
-            case "PATCH" => Routes.patch(system, path).handle(ctx, path, normalizedParams, this.request)
-          }
+          handleReq(ctx, this.decoder.path, this.request)
         }
         catch {
           case e: Exception =>
@@ -50,6 +50,15 @@ class HttpHandler(system: ContextSystem) extends SimpleChannelInboundHandler[Any
             HttpResponse.sendError(ctx, "{\"status\":\"500\", \"message\": \"" + e + "\"}")
         }
     }
+  }
+
+  private def handleReq(ctx: ChannelHandlerContext, path: String, request: HttpRequest) = request.getMethod.name match {
+    case "GET" => Routes.get(system, path).handle(ctx, path, normalizedParams, this.request)
+    case "POST" => Routes.post(system, path).handle(ctx, path, normalizedParams, this.request)
+    case "PUT" => Routes.put(system, path).handle(ctx, path, normalizedParams, this.request)
+    case "OPTIONS" => Routes.options(system, path).handle(ctx, path, normalizedParams, this.request)
+    case "DELETE" => Routes.delete(system, path).handle(ctx, path, normalizedParams, this.request)
+    case "PATCH" => Routes.patch(system, path).handle(ctx, path, normalizedParams, this.request)
   }
 
   private def send100(ctx: ChannelHandlerContext) {
