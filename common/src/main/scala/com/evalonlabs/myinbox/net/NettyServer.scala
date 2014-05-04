@@ -11,7 +11,7 @@ import io.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import io.netty.util.concurrent.GlobalEventExecutor
 import io.netty.buffer.ByteBuf
 
-abstract class NettyServer(name: String, port: Integer)(initializer: (SocketChannel) => Any) extends Logging {
+abstract class NettyServer(name: String, port: Integer, initializer: CustomInitializer) extends Logging {
   private val state: AtomicReference[State.State] = new AtomicReference[State.State](State.STOPPED)
   private val maxThreads = Runtime.getRuntime availableProcessors()
   private val group: EventLoopGroup = new NioEventLoopGroup()
@@ -27,9 +27,7 @@ abstract class NettyServer(name: String, port: Integer)(initializer: (SocketChan
       val bootstrap: ServerBootstrap = new ServerBootstrap()
       bootstrap.group(group, workerGroup)
         .channel(classOf[NioServerSocketChannel])
-        .childHandler(new ServerInitializer(new CustomInitializer {
-        override def apply(ch: SocketChannel): Any = initializer(ch)
-      }))
+        .childHandler(new ServerInitializer(initializer))
 
       onStart(bootstrap)
 
@@ -61,7 +59,7 @@ abstract class NettyServer(name: String, port: Integer)(initializer: (SocketChan
 
   protected def onReceived(ctx: ChannelHandlerContext, buf: ByteBuf)
 
-  sealed class ServerInitializer(initializer: CustomInitializer)(implicit channelGroup: ChannelGroup) extends ChannelInitializer[SocketChannel] {
+  class ServerInitializer(initializer: CustomInitializer)(implicit channelGroup: ChannelGroup) extends ChannelInitializer[SocketChannel] {
 
     override def initChannel(ch: SocketChannel) {
       if (this.initializer != null) {
