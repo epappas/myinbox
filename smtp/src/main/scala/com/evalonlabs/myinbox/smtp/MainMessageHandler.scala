@@ -5,7 +5,7 @@ import java.io.InputStream
 import java.net.InetSocketAddress
 import java.util.{Properties, Date}
 import com.evalonlabs.myinbox.util.SafeConfig
-import com.evalonlabs.myinbox.actor.SmtpAkkaSystem
+import com.evalonlabs.myinbox.actor.SmtpActorSystem
 import akka.pattern.ask
 import com.evalonlabs.myinbox.model._
 import akka.util.Timeout
@@ -39,7 +39,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
     logger debug "From: " + from
 
     implicit val timeout = Timeout(2 minutes)
-    val future = SmtpAkkaSystem.senderCheckActor ?(inet, helo, from)
+    val future = SmtpActorSystem.senderCheckActor ?(inet, helo, from)
     Await.result(future, 2 minutes) match {
       case GoNext() => sender.lazySet(from)
       case Reject(reason) =>
@@ -57,7 +57,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
     logger debug "To: " + addr
 
     implicit val timeout = Timeout(2 minutes)
-    val future = SmtpAkkaSystem.recipientCheckActor ? (inet, sender.get, addr)
+    val future = SmtpActorSystem.recipientCheckActor ? (inet, sender.get, addr)
     Await.result(future, 2 minutes) match {
       case AliasAddr(userAddr) => recip.lazySet(userAddr)
       case GoNext() => recip.lazySet(addr)
@@ -73,13 +73,13 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
     val message = new MimeMessage(session, data)
 
     implicit val timeout = Timeout(2 minutes)
-    val future = SmtpAkkaSystem.messageCheckActor ? Message[MimeMessage](inet, sender.get, recip.get, message.getSubject, message)
+    val future = SmtpActorSystem.messageCheckActor ? Message[MimeMessage](inet, sender.get, recip.get, message.getSubject, message)
     Await.result(future, 2 minutes) match {
       case msg: Message[MimeMessage] =>
-        val userFilter = SmtpAkkaSystem.userFilterActor ? msg
+        val userFilter = SmtpActorSystem.userFilterActor ? msg
         Await.result(userFilter, 2 minutes) match {
           case msg: Message[MimeMessage] =>
-            SmtpAkkaSystem.persistMsgActor ! msg
+            SmtpActorSystem.persistMsgActor ! msg
           case Reject(reason) =>
             logger debug "Reject data: reason: " + reason
             throw new RejectException(reason)

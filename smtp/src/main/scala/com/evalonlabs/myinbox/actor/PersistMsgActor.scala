@@ -27,7 +27,7 @@ class PersistMsgActor extends Actor with Logging {
         Inbox.index(messageID, message.from, message.to, message.subject, cleanMessage, sentDate)
         Sender.index(message.from, message.inet)
 
-        SmtpAkkaSystem.userPrefsActor ! (messageID, message)
+        SmtpActorSystem.userPrefsActor ! (messageID, message)
 
         // TODO - notify next services
       }

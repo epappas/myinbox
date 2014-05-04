@@ -3,7 +3,7 @@ package com.evalonlabs.myinbox.actor
 import akka.actor.{Props, ActorSystem}
 import akka.routing.FromConfig
 
-object SmtpAkkaSystem {
+object SmtpActorSystem {
 
 	val system = ActorSystem("MyInboxSystem")
 	val senderCheckActor = system.actorOf(Props[SenderCheckActor].withRouter(FromConfig()), "sender")
