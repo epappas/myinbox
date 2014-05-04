@@ -5,7 +5,7 @@ import io.netty.handler.codec.http._
 import com.evalonlabs.myinbox.http.route.Routes
 import com.evalonlabs.net.http.HttpResponse
 import java.util
-import com.evalonlabs.myinbox.monitoring.Logging
+import com.evalonlabs.monitoring.Logging
 import com.evalonlabs.net.http.ContextSystem
 
 class HttpHandler(system: ContextSystem) extends SimpleChannelInboundHandler[AnyRef] with Logging {

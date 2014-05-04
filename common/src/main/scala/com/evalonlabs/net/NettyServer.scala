@@ -1,6 +1,6 @@
 package com.evalonlabs.net
 
-import com.evalonlabs.myinbox.monitoring.Logging
+import com.evalonlabs.monitoring.Logging
 import java.util.concurrent.atomic.AtomicReference
 import io.netty.channel._
 import io.netty.bootstrap.ServerBootstrap

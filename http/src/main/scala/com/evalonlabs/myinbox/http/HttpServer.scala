@@ -1,7 +1,7 @@
 package com.evalonlabs.myinbox.http
 
 import com.evalonlabs.net.{CustomInitializer, NettyServer}
-import com.evalonlabs.myinbox.monitoring.Logging
+import com.evalonlabs.monitoring.Logging
 import io.netty.channel.socket.SocketChannel
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.{ChannelOption, ChannelPipeline, ChannelHandlerContext}

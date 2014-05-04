@@ -1,4 +1,4 @@
-package com.evalonlabs.myinbox.monitoring
+package com.evalonlabs.monitoring
 
 import org.slf4j.{LoggerFactory, Logger}
 

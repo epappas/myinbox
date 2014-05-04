@@ -1,6 +1,6 @@
 package com.evalonlabs.myinbox.util
 
-import com.evalonlabs.myinbox.store.Redis
+import com.evalonlabs.store.Redis
 import java.util.Date
 
 object Inbox extends Object with Redis {

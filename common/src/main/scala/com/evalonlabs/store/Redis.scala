@@ -1,4 +1,4 @@
-package com.evalonlabs.myinbox.store
+package com.evalonlabs.store
 
 import com.evalonlabs.myinbox.util.SafeConfig
 import com.redis.RedisClient

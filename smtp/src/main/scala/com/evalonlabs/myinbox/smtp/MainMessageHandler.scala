@@ -19,7 +19,7 @@ import com.evalonlabs.myinbox.model.GoNext
 import com.evalonlabs.myinbox.model.AliasAddr
 import com.evalonlabs.myinbox.model.Reject
 import java.util.concurrent.atomic.AtomicReference
-import com.evalonlabs.myinbox.monitoring.Logging
+import com.evalonlabs.monitoring.Logging
 
 class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Logging {
 

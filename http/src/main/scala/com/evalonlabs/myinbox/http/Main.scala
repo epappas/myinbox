@@ -1,6 +1,6 @@
 package com.evalonlabs.myinbox.http
 
-import com.evalonlabs.myinbox.monitoring.Logging
+import com.evalonlabs.monitoring.Logging
 
 object Main extends App with Logging {
   implicit val loader: ClassLoader = Thread.currentThread().getContextClassLoader
