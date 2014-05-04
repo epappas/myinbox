@@ -1,17 +1,18 @@
 package com.evalonlabs.myinbox.http
 
-import com.evalonlabs.myinbox.net.{CustomInitializer, NettyServer}
+import com.evalonlabs.net.{CustomInitializer, NettyServer}
 import com.evalonlabs.myinbox.monitoring.Logging
 import io.netty.channel.socket.SocketChannel
 import io.netty.bootstrap.ServerBootstrap
-import io.netty.channel.{ChannelPipeline, ChannelHandlerContext}
+import io.netty.channel.{ChannelOption, ChannelPipeline, ChannelHandlerContext}
 import io.netty.buffer.ByteBuf
 import io.netty.handler.codec.http.{HttpObjectAggregator, HttpResponseEncoder, HttpRequestDecoder}
 
 class HttpServer(name: String, port: Integer, initializer: CustomInitializer) extends NettyServer(name, port, initializer) with Logging {
 
   def onStart(bootstrap: ServerBootstrap) = {
-    bootstrap
+    bootstrap.option(ChannelOption.TCP_NODELAY, true)
+    bootstrap.option(ChannelOption.SO_KEEPALIVE, true)
   }
 
   def onStop(f: => Any) = {

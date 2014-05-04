@@ -2,7 +2,7 @@ package com.evalonlabs.myinbox.http.route
 
 
 import io.netty.channel.ChannelHandlerContext
-import com.evalonlabs.myinbox.net.http.{ContextSystem, HttpResponse => MyHttpResponse, RouteHandler}
+import com.evalonlabs.net.http.{ContextSystem, HttpResponse => MyHttpResponse, RouteHandler}
 import java.util
 import com.evalonlabs.myinbox.http.route.call.IndexCall
 import io.netty.handler.codec.http.HttpRequest

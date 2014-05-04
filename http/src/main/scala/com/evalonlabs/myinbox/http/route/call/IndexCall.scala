@@ -1,6 +1,6 @@
 package com.evalonlabs.myinbox.http.route.call
 
-import com.evalonlabs.myinbox.net.http.{ContextSystem, RouteHandler, HttpResponse => MyHttpResponse}
+import com.evalonlabs.net.http.{ContextSystem, RouteHandler, HttpResponse => MyHttpResponse}
 import io.netty.channel.ChannelHandlerContext
 import java.util
 import com.sun.deploy.net.HttpResponse

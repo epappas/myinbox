@@ -1,4 +1,4 @@
-package com.evalonlabs.myinbox.net.http
+package com.evalonlabs.net.http
 
 import io.netty.channel.ChannelHandlerContext
 import java.util

@@ -1,4 +1,4 @@
-package com.evalonlabs.myinbox.net
+package com.evalonlabs.net
 
 import com.evalonlabs.myinbox.monitoring.Logging
 import java.util.concurrent.atomic.AtomicReference
