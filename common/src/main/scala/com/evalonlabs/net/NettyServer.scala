@@ -31,9 +31,6 @@ abstract class NettyServer(name: String, port: Integer, initializer: CustomIniti
 
       onStart(bootstrap)
 
-      // bootstrap.option(ChannelOption.TCP_NODELAY, true)
-      // bootstrap.option(ChannelOption.SO_KEEPALIVE, true)
-
       val channel = bootstrap.bind(port).channel()
       channelGroup.add(channel)
       logger.debug("Server: [" + name + "] Started on port:" + port)
@@ -66,10 +63,6 @@ abstract class NettyServer(name: String, port: Integer, initializer: CustomIniti
         val pipeline: ChannelPipeline = ch.pipeline()
 
         pipeline.addLast("connection", new ConnectionProxy(channelGroup))
-
-        // pipeline.addLast("decoder", new HttpRequestDecoder())
-        // pipeline.addLast("http_encoder", new HttpResponseEncoder())
-        // pipeline.addLast("aggregator", new HttpObjectAggregator(65536))
 
         this.initializer.apply(ch)
       }
