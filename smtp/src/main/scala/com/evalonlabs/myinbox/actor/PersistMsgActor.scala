@@ -19,12 +19,13 @@ class PersistMsgActor extends Actor with Logging {
       val messageID = UUID.get()
       val uKey = User.getUKey(message.to)
       val secret = User.getEncryptionKey(uKey)
-      val encrypted = Crypto.inAES64(Mail.toBytes(cleanMessage), secret)
+      val messageBody = Mail.toBytes(cleanMessage)
+      val encrypted = Crypto.inAES64(messageBody, secret)
       val compressed = Compress.zip(encrypted)
 
       try {
         Inbox.add(messageID, message.from, message.to, message.subject, compressed, sentDate)
-        Inbox.index(messageID, message.from, message.to, message.subject, cleanMessage, sentDate)
+        Inbox.index(messageID, message.from, message.to, message.subject, new String(messageBody), sentDate)
         Sender.index(message.from, message.inet)
 
         SmtpActorSystem.userPrefsActor ! (messageID, message)
