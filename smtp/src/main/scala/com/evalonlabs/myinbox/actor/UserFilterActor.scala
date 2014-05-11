@@ -10,7 +10,7 @@ class UserFilterActor extends Actor with Logging {
 
 	def receive = {
 
-		case message: Message =>
+		case message: Message[Any] =>
       // TODO check this message with User's preferences
       sender ! message
 

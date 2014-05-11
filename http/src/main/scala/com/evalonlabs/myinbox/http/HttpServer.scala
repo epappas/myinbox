@@ -11,8 +11,8 @@ import io.netty.handler.codec.http.{HttpObjectAggregator, HttpResponseEncoder, H
 class HttpServer(name: String, port: Integer, initializer: CustomInitializer) extends NettyServer(name, port, initializer) with Logging {
 
   def onStart(bootstrap: ServerBootstrap) = {
-    bootstrap.option(ChannelOption.TCP_NODELAY, true)
-    bootstrap.option(ChannelOption.SO_KEEPALIVE, true)
+    bootstrap.option(ChannelOption.TCP_NODELAY, Boolean.box(true))
+    bootstrap.option(ChannelOption.SO_KEEPALIVE, Boolean.box(true))
   }
 
   def onStop(f: => Any) = {

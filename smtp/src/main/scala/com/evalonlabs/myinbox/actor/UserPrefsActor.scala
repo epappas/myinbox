@@ -10,11 +10,9 @@ class UserPrefsActor extends Actor with Logging {
 
 	def receive = {
 
-		case (messageID: String, message: Message) =>
+		case (messageID: String, message: Message[Any]) =>
       // TODO apply user's preferences
       message
-
-    case _ => logger error "Unknown message: " + _.toString
 
 	}
 
