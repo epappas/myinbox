@@ -11,6 +11,8 @@ import io.netty.handler.codec.http.{HttpObjectAggregator, HttpResponseEncoder, H
 class HttpServer(name: String, port: Integer, initializer: CustomInitializer) extends NettyServer(name, port, initializer) with Logging {
 
   def onStart(bootstrap: ServerBootstrap) = {
+    bootstrap.option(ChannelOption.SO_BACKLOG,   Int.box(1024))
+    bootstrap.option(ChannelOption.SO_REUSEADDR, Boolean.box(true))
     bootstrap.option(ChannelOption.TCP_NODELAY, Boolean.box(true))
     bootstrap.option(ChannelOption.SO_KEEPALIVE, Boolean.box(true))
   }
