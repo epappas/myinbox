@@ -18,19 +18,19 @@ class HttpServer(name: String, port: Integer, initializer: CustomInitializer) ex
   }
 
   def onStop(f: => Any) = {
-
+    logger.info("Server Stoped")
   }
 
   def onConnectionOpened(ctx: ChannelHandlerContext) = {
-
+    logger.debug("Connection Opened " + ctx.channel().remoteAddress())
   }
 
   def onConnectionClosed(ctx: ChannelHandlerContext) = {
-
+    logger.debug("Connection Closed " + ctx.channel().remoteAddress())
   }
 
   def onServerError(ctx: ChannelHandlerContext, cause: Throwable) = {
-
+    logger.debug("Server Error" + ctx.channel().remoteAddress() + cause.getMessage + cause.getStackTrace)
   }
 
   def onReceived(ctx: ChannelHandlerContext, buf: ByteBuf) = {
