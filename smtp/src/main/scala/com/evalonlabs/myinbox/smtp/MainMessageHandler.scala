@@ -55,7 +55,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
       }
     }))
 
-    SmtpActorSystem.senderCheckActor !(fromReceive, FromReq(ctx, addr.toLowerCase), lock)
+    SmtpActorSystem.senderCheckActor ! (fromReceive, FromReq(ctx, addr.toLowerCase), lock)
     lock.await(2, TimeUnit.MINUTES)
   }
 
