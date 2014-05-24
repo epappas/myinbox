@@ -54,7 +54,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
 
   def recipient(addr: String) {
 
-    logger debug "To: " + addr
+    logger.debug("To: " + addr)
 
     implicit val timeout = Timeout(2 minutes)
     val future = SmtpActorSystem.recipientCheckActor ? (inet, sender.get, addr)
@@ -62,7 +62,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
       case AliasAddr(userAddr) => recip.lazySet(userAddr)
       case GoNext() => recip.lazySet(addr)
       case Reject(reason) =>
-        logger warn ("Reject recipient ip: " + ip + " to: " + addr + " reason: " + reason)
+        logger.warn("Reject recipient ip: " + ip + " to: " + addr + " reason: " + reason)
         throw new RejectException(reason)
     }
   }
@@ -81,17 +81,17 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
           case msg: Message[MimeMessage] =>
             SmtpActorSystem.persistMsgActor ! msg
           case Reject(reason) =>
-            logger debug "Reject data: reason: " + reason
+            logger.debug("Reject data: reason: " + reason)
             throw new RejectException(reason)
         }
       case Reject(reason) =>
-        logger debug "Reject data ip: " + ip + " reason: " + reason
+        logger.debug("Reject data ip: " + ip + " reason: " + reason)
         throw new RejectException(reason)
     }
   }
 
 
   def done() {
-    logger debug "Finished at " + new Date().getTime
+    logger.debug("Finished at " + new Date().getTime)
   }
 }

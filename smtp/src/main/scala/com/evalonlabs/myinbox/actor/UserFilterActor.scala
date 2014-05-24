@@ -14,7 +14,7 @@ class UserFilterActor extends Actor with Logging {
       // TODO check this message with User's preferences
       sender ! message
 
-    case msg => logger error "Unknown message: " + msg.toString
+    case msg => logger.error("Unknown message: " + msg.toString)
 
 	}
 

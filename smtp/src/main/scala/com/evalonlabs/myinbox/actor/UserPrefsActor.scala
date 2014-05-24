@@ -11,6 +11,7 @@ class UserPrefsActor extends Actor with Logging {
 	def receive = {
 
 		case (messageID: String, message: Message[Any]) =>
+      logger.trace("Check User Pref " + messageID + " to " + message.to + " " + message.from)
       // TODO apply user's preferences
       message
 

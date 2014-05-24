@@ -20,7 +20,7 @@ class MessageCheckActor extends Actor with Logging {
       }
 		}
 
-		case msg => logger error "Unknown message: " + msg.toString
+		case msg => logger.error("Unknown message: " + msg.toString)
 
 	}
 

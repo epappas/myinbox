@@ -3,9 +3,9 @@ package com.evalonlabs.myinbox.smtp
 import org.subethamail.smtp.server.SMTPServer
 import com.evalonlabs.myinbox.util.SafeConfig
 import java.net.InetAddress
-import com.typesafe.scalalogging.slf4j.Logging
 import java.util.Date
 import org.subethamail.smtp.{MessageHandler, MessageContext, MessageHandlerFactory}
+import com.evalonlabs.monitoring.Logging
 
 
 object Main extends App with Logging {
@@ -31,7 +31,7 @@ object Main extends App with Logging {
   )
   smtpServer.setSoftwareName("myInbox")
 
-  logger info ("myInbox startup at " + new Date().getTime)
+  logger.info("myInbox startup at " + new Date().getTime)
   smtpServer.start()
 
 }

@@ -21,7 +21,7 @@ class SenderCheckActor extends Actor with Logging {
 		}
 
 		case x => {
-			logger error "Unknown message: " + x.toString
+			logger.error("Unknown message: " + x.toString)
 			sender ! GoNext()
 		}
 

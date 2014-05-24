@@ -17,7 +17,7 @@ class RecipientCheckActor extends Actor with Logging {
       sender ! AliasAddr(User.addressFromAlias(addr))
 		}
 
-		case x => logger error "Unknown message: " + x.toString
+		case x => logger.error("Unknown message: " + x.toString)
 	}
 
 }

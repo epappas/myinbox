@@ -34,12 +34,12 @@ class PersistMsgActor extends Actor with Logging {
       }
       catch {
         case e: Exception =>
-          logger error "Exception saving message at " + new Date().getTime
+          logger.error("Exception saving message at " + new Date().getTime)
         // TODO Dead letter channel
       }
     }
 
-    case x => logger error "Unknown message: " + x.toString
+    case x => logger.error("Unknown message: " + x.toString)
   }
 
 }
