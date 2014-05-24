@@ -2,7 +2,6 @@ package com.evalonlabs.myinbox.smtp
 
 import org.subethamail.smtp.{RejectException, DropConnectionException, MessageHandler, MessageContext}
 import java.io.InputStream
-import java.net.InetSocketAddress
 import java.util.{Properties, Date}
 import com.evalonlabs.myinbox.util.SafeConfig
 import com.evalonlabs.myinbox.actor.SmtpActorSystem
@@ -18,37 +17,46 @@ import com.evalonlabs.myinbox.model.Greylist
 import com.evalonlabs.myinbox.model.GoNext
 import com.evalonlabs.myinbox.model.AliasAddr
 import com.evalonlabs.myinbox.model.Reject
-import java.util.concurrent.atomic.AtomicReference
 import com.evalonlabs.monitoring.Logging
+import akka.actor.{Actor, Props}
+import java.util.concurrent.{TimeUnit, CountDownLatch}
+import java.util.{HashMap => JHashMap}
+import java.util.concurrent.atomic.AtomicReference
 
 class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Logging {
-
-  val inet = ctx.getRemoteAddress.asInstanceOf[InetSocketAddress].getAddress
-  val ip = inet.getHostAddress
-  val sender: AtomicReference[String] = new AtomicReference[String]()
-  val recip: AtomicReference[String] = new AtomicReference[String]()
+  val state = new JHashMap[String, AtomicReference]()
   val timestamp = new Date().getTime
   val delay = SafeConfig.getMilliseconds("myinbox.server.command-delay").getOrElse(10000L)
 
   def from(addr: String) {
+    val mctx = MessageCtxDetails(ctx)
+    val lock = new CountDownLatch(1)
 
-    val helo = Option(ctx.getHelo).getOrElse(ip).toLowerCase
-    val from = addr.toLowerCase
+    logger.debug("Helo: " + mctx.helo)
+    logger.debug("From: " + from)
 
-    logger debug "Helo: " + helo
-    logger debug "From: " + from
+    val fromReceive = SmtpActorSystem.system.actorOf(Props(new Actor() {
+      def receive: Receive = {
+        case (FromOk(ctx, from), lock) =>
+          state.put("sender", new AtomicReference(from))
+          lock.countDown()
+        case (Reject(reason, ctx, from), lock) =>
+          val mctx = MessageCtxDetails(ctx)
+          val helo = mctx.helo
+          val ip = mctx.ip
 
-    implicit val timeout = Timeout(2 minutes)
-    val future = SmtpActorSystem.senderCheckActor ?(inet, helo, from)
-    Await.result(future, 2 minutes) match {
-      case GoNext() => sender.lazySet(from)
-      case Reject(reason) =>
-        logger warn ("Reject ip: " + ip + " helo: " + helo + " from: " + from + " reason: " + reason)
-        throw new DropConnectionException(reason)
-      case Greylist(reason) =>
-        throw new DropConnectionException(421, reason)
-      case _ => throw new Exception("Error in processing.")
-    }
+          lock.countDown()
+          logger.warn("Reject ip: " + ip + " helo: " + helo + " from: " + from + " reason: " + reason)
+          throw new DropConnectionException(reason)
+        case Greylist(reason) =>
+          lock.countDown()
+          throw new DropConnectionException(421, reason)
+        case _ => throw new Exception("Error in processing.")
+      }
+    }))
+
+    SmtpActorSystem.senderCheckActor !(fromReceive, FromReq(ctx, addr.toLowerCase), lock)
+    lock.await(2, TimeUnit.MINUTES)
   }
 
 
