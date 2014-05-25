@@ -28,6 +28,10 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
   val timestamp = new Date().getTime
   val delay = SafeConfig.getMilliseconds("myinbox.server.command-delay").getOrElse(10000L)
 
+  state.put("sender", new AtomicReference[String]())
+  state.put("recipient", new AtomicReference[String]())
+  state.put("recipient", new AtomicReference[String]())
+
   def from(addr: String) {
     val mctx = MessageCtxDetails(ctx)
     val lock = new CountDownLatch(1)
@@ -35,12 +39,13 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
     logger.debug("Helo: " + mctx.helo)
     logger.debug("From: " + from)
 
-    val fromReceive = SmtpActorSystem.system.actorOf(Props(new Actor() {
+    val localReceive = SmtpActorSystem.system.actorOf(Props(new Actor() {
       def receive: Receive = {
-        case (FromOk(ctx, from), lock) =>
-          state.put("sender", new AtomicReference(from))
+        case (FromOk(ctx, from), thatState, lock) =>
+          thatState.get("sender").lazySet(from)
           lock.countDown()
-        case (Reject(reason, ctx, from), lock) =>
+
+        case (Reject(reason, ctx, from), thatState, lock) =>
           val mctx = MessageCtxDetails(ctx)
           val helo = mctx.helo
           val ip = mctx.ip
@@ -48,10 +53,14 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
           lock.countDown()
           logger.warn("Reject ip: " + ip + " helo: " + helo + " from: " + from + " reason: " + reason)
           throw new DropConnectionException(reason)
-        case Greylist(reason) =>
+
+        case (Greylist(reason, ctx, from), thatState, lock) =>
           lock.countDown()
           throw new DropConnectionException(421, reason)
-        case _ => throw new Exception("Error in processing.")
+
+        case _ =>
+          lock.countDown()
+          throw new Exception("Error in processing sender.")
       }
     }))
 
