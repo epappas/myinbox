@@ -64,24 +64,43 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
       }
     }))
 
-    SmtpActorSystem.senderCheckActor ! (fromReceive, FromReq(ctx, addr.toLowerCase), lock)
+    SmtpActorSystem.senderCheckActor ! (localReceive, FromReq(ctx, addr.toLowerCase), state, lock)
     lock.await(2, TimeUnit.MINUTES)
   }
 
 
   def recipient(addr: String) {
 
+    val lock = new CountDownLatch(1)
+
     logger.debug("To: " + addr)
 
-    implicit val timeout = Timeout(2 minutes)
-    val future = SmtpActorSystem.recipientCheckActor ? (inet, sender.get, addr)
-    Await.result(future, 2 minutes) match {
-      case AliasAddr(userAddr) => recip.lazySet(userAddr)
-      case GoNext() => recip.lazySet(addr)
-      case Reject(reason) =>
-        logger.warn("Reject recipient ip: " + ip + " to: " + addr + " reason: " + reason)
-        throw new RejectException(reason)
-    }
+    val localReceive = SmtpActorSystem.system.actorFor(Props(new Actor {
+      override def receive: Receive = {
+        case (RecipientOk(ctx, addr, false), thatState, lock) =>
+          thatState.get("recipient").lazySet(addr)
+          lock.countDown()
+
+        case (RecipientOk(ctx, addr, true), thatState, lock) =>
+          thatState.get("recipient").lazySet(addr)
+          lock.countDown()
+
+        case (Reject(reason, ctx, from), thatState, lock) =>
+          val mctx = MessageCtxDetails(ctx)
+          val ip = mctx.ip
+
+          logger.warn("Reject recipient ip: " + ip + " to: " + addr + " reason: " + reason)
+          lock.countDown()
+          throw new RejectException(reason)
+
+        case _ =>
+          lock.countDown()
+          throw new Exception("Error in processing recipient.")
+      }
+    }))
+
+    SmtpActorSystem.recipientCheckActor ! (localReceive, RecipientReq(ctx, addr), state, lock)
+    lock.await(2, TimeUnit.MINUTES)
   }
 
 
