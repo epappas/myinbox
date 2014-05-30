@@ -22,31 +22,31 @@ import java.util.{HashMap => JHashMap}
 import java.util.concurrent.atomic.AtomicReference
 
 class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Logging {
-  val state = new JHashMap[String, AtomicReference]()
+  val state = new JHashMap[String, AtomicReference[Any]]()
   val timestamp = new Date().getTime
   val delay = SafeConfig.getMilliseconds("myinbox.server.command-delay").getOrElse(10000L)
 
-  state.put("sender", new AtomicReference[String]())
-  state.put("recipient", new AtomicReference[String]())
-  state.put("recipient", new AtomicReference[String]())
+  state.put("sender", new AtomicReference[Any]())
+  state.put("recipient", new AtomicReference[Any]())
+  state.put("recipient", new AtomicReference[Any]())
 
   def from(addr: String) {
     val mctx = MessageCtxDetails(ctx)
     val lock = new CountDownLatch(1)
 
     logger.debug("Helo: " + mctx.helo)
-    logger.debug("From: " + from)
+    logger.debug("From: " + addr)
 
     val localReceive = SmtpActorSystem.system.actorOf(Props(new Actor() {
       override def receive: Receive = {
-        case FromOk(ctx: MessageContext,
-        from: String, thatState: JHashMap[String, AtomicReference],
+        case (FromOk(ctx: MessageContext, from: String),
+        thatState: JHashMap[String, AtomicReference[Any]],
         lock: CountDownLatch) =>
           thatState.get("sender").lazySet(from)
           lock.countDown()
 
-        case Reject(reason:String, ctx: MessageContext,
-        from: String, thatState: JHashMap[String, AtomicReference],
+        case (Reject(reason: String, ctx: MessageContext, from: String),
+        thatState: JHashMap[String, AtomicReference[Any]],
         lock: CountDownLatch) =>
           val mctx = MessageCtxDetails(ctx)
           val helo = mctx.helo
@@ -56,8 +56,8 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
           logger.warn("Reject ip: " + ip + " helo: " + helo + " from: " + from + " reason: " + reason)
           throw new DropConnectionException(reason)
 
-        case Greylist(reason:String, ctx: MessageContext,
-        from: String, thatState: JHashMap[String, AtomicReference],
+        case (Greylist(reason: String, ctx: MessageContext, from: String),
+        thatState: JHashMap[String, AtomicReference[Any]],
         lock: CountDownLatch) =>
           lock.countDown()
           throw new DropConnectionException(421, reason)
@@ -68,7 +68,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
       }
     }))
 
-    SmtpActorSystem.senderCheckActor ! FromReq(localReceive, ctx, addr.toLowerCase, state, lock)
+    SmtpActorSystem.senderCheckActor ! (localReceive, FromReq(ctx, addr.toLowerCase), state, lock)
     lock.await(2, TimeUnit.MINUTES)
   }
 
@@ -79,25 +79,24 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
 
     logger.debug("To: " + addr)
 
-    val localReceive = SmtpActorSystem.system.actorFor(Props(new Actor {
+    val localReceive = SmtpActorSystem.system.actorOf(Props(new Actor {
       override def receive: Receive = {
-        case RecipientOk(ctx: MessageContext,
-        addr: String, thatState: JHashMap[String, AtomicReference],
-        lock: CountDownLatch, false) =>
+        case (RecipientOk(ctx: MessageContext, addr: String, false),
+        thatState: JHashMap[String, AtomicReference[Any]],
+        lock: CountDownLatch) =>
 
           thatState.get("recipient").lazySet(addr)
           lock.countDown()
 
-        case RecipientOk(ctx: MessageContext,
-        addr: String, thatState: JHashMap[String, AtomicReference],
+        case (RecipientOk(ctx: MessageContext, addr: String, true),
+        thatState: JHashMap[String, AtomicReference[Any]],
         lock: CountDownLatch, true) =>
 
           thatState.get("recipient").lazySet(addr)
           lock.countDown()
 
-        case Reject(reason: String,
-        ctx: MessageContext,
-        addr: String, _, lock: CountDownLatch) =>
+        case (Reject(reason: String, ctx: MessageContext, addr: String),
+        _, lock: CountDownLatch) =>
 
           val mctx = MessageCtxDetails(ctx)
           val ip = mctx.ip
@@ -112,7 +111,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
       }
     }))
 
-    SmtpActorSystem.recipientCheckActor ! RecipientReq(localReceive, ctx, addr, state, lock)
+    SmtpActorSystem.recipientCheckActor ! (localReceive, RecipientReq(ctx, addr), state, lock)
     lock.await(2, TimeUnit.MINUTES)
   }
 
