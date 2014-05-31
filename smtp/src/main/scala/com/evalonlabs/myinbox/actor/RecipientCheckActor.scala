@@ -1,23 +1,27 @@
 package com.evalonlabs.myinbox.actor
 
-import akka.actor.Actor
+import akka.actor.{ActorRef, Actor}
 import com.typesafe.scalalogging.slf4j.Logging
-import com.evalonlabs.myinbox.model.AliasAddr
+import com.evalonlabs.myinbox.model.{RecipientOk, RecipientReq, AliasAddr}
 import com.evalonlabs.myinbox.util.User
-import java.net.InetAddress
+import org.subethamail.smtp.MessageContext
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.CountDownLatch
+import java.util.{HashMap => JHashMap}
 
 class RecipientCheckActor extends Actor with Logging {
 
-	def receive = {
+  def receive = {
 
-		case (inet: InetAddress, from: String, addr: String) => {
-			//TODO check address
+    case (receiver: ActorRef, RecipientReq(ctx: MessageContext, from: String),
+    state: JHashMap[String, AtomicReference[String]], lock: CountDownLatch) =>
+      //TODO check address
       // TODO if not exists, check alias
       // TODO reject in non existence
-      sender ! AliasAddr(User.addressFromAlias(addr))
-		}
+      receiver ! (RecipientOk(ctx, from, Boolean.box(true)), state, lock )
+//      sender ! AliasAddr(User.addressFromAlias(addr))
 
-		case x => logger.error("Unknown message: " + x.toString)
-	}
+    case x => logger.error("Unknown message: " + x.toString)
+  }
 
 }
