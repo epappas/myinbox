@@ -22,13 +22,12 @@ import java.util.{HashMap => JHashMap}
 import java.util.concurrent.atomic.AtomicReference
 
 class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Logging {
-  val state = new JHashMap[String, AtomicReference[Any]]()
+  val state = new JHashMap[String, AtomicReference[String]]()
   val timestamp = new Date().getTime
   val delay = SafeConfig.getMilliseconds("myinbox.server.command-delay").getOrElse(10000L)
 
-  state.put("sender", new AtomicReference[Any]())
-  state.put("recipient", new AtomicReference[Any]())
-  state.put("recipient", new AtomicReference[Any]())
+  state.put("sender", new AtomicReference[String]())
+  state.put("recipient", new AtomicReference[String]())
 
   def from(addr: String) {
     val mctx = MessageCtxDetails(ctx)
@@ -40,13 +39,13 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
     val localReceive = SmtpActorSystem.system.actorOf(Props(new Actor() {
       override def receive: Receive = {
         case (FromOk(ctx: MessageContext, from: String),
-        thatState: JHashMap[String, AtomicReference[Any]],
+        thatState: JHashMap[String, AtomicReference[String]],
         lock: CountDownLatch) =>
           thatState.get("sender").lazySet(from)
           lock.countDown()
 
         case (Reject(reason: String, ctx: MessageContext, from: String),
-        thatState: JHashMap[String, AtomicReference[Any]],
+        thatState: JHashMap[String, AtomicReference[String]],
         lock: CountDownLatch) =>
           val mctx = MessageCtxDetails(ctx)
           val helo = mctx.helo
@@ -57,7 +56,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
           throw new DropConnectionException(reason)
 
         case (Greylist(reason: String, ctx: MessageContext, from: String),
-        thatState: JHashMap[String, AtomicReference[Any]],
+        thatState: JHashMap[String, AtomicReference[String]],
         lock: CountDownLatch) =>
           lock.countDown()
           throw new DropConnectionException(421, reason)
@@ -82,14 +81,14 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
     val localReceive = SmtpActorSystem.system.actorOf(Props(new Actor {
       override def receive: Receive = {
         case (RecipientOk(ctx: MessageContext, addr: String, false),
-        thatState: JHashMap[String, AtomicReference[Any]],
+        thatState: JHashMap[String, AtomicReference[String]],
         lock: CountDownLatch) =>
 
           thatState.get("recipient").lazySet(addr)
           lock.countDown()
 
         case (RecipientOk(ctx: MessageContext, addr: String, true),
-        thatState: JHashMap[String, AtomicReference[Any]],
+        thatState: JHashMap[String, AtomicReference[String]],
         lock: CountDownLatch, true) =>
 
           thatState.get("recipient").lazySet(addr)
