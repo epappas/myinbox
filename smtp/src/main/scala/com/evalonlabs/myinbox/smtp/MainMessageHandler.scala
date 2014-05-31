@@ -125,12 +125,12 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
         case (MsgCheckOk(ctx: MessageContext, msg: Message[MimeMessage]),
         thatState: JHashMap[String, AtomicReference[String]]) =>
 
-          SmtpActorSystem.userFilterActor !(self, ctx, msg, thatState)
+          SmtpActorSystem.userFilterActor !(self, UsrFilterReq(ctx, msg), thatState)
 
         case (UsrFilterOk(ctx: MessageContext, msg: Message[MimeMessage]),
         thatState: JHashMap[String, AtomicReference[String]]) =>
 
-          SmtpActorSystem.persistMsgActor !(self, ctx, msg, thatState)
+          SmtpActorSystem.persistMsgActor !(self, PersistMsgReq(ctx, msg), thatState)
 
         case Reject(reason: String, ctx: MessageContext, addr: String) =>
           val mctx = MessageCtxDetails(ctx)

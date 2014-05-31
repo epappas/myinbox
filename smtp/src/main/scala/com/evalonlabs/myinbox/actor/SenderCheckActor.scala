@@ -25,8 +25,8 @@ class SenderCheckActor extends Actor with Logging {
       receiver !(FromOk(ctx, from), state, lock)
     // receiver ! (Greylist(reason, ctx, from), state, lock)
     // receiver ! (Reject(reason, ctx, from), state, lock)
-    case _: Any =>
-      logger.error("Unknown message: " + _.toString)
+    case _ =>
+      logger.error("Unknown message: ")
   }
 
 }
