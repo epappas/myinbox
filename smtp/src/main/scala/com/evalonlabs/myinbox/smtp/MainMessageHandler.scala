@@ -5,12 +5,8 @@ import java.io.InputStream
 import java.util.{Properties, Date}
 import com.evalonlabs.myinbox.util.SafeConfig
 import com.evalonlabs.myinbox.actor.SmtpActorSystem
-import akka.pattern.ask
 import com.evalonlabs.myinbox.model._
-import akka.util.Timeout
-import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.concurrent.Await
 import javax.mail.Session
 import javax.mail.internet.MimeMessage
 import com.evalonlabs.myinbox.model.Greylist
@@ -67,7 +63,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
       }
     }))
 
-    SmtpActorSystem.senderCheckActor ! (localReceive, FromReq(ctx, addr.toLowerCase), state, lock)
+    SmtpActorSystem.senderCheckActor !(localReceive, FromReq(ctx, addr.toLowerCase), state, lock)
     lock.await(2, TimeUnit.MINUTES)
   }
 
@@ -110,7 +106,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
       }
     }))
 
-    SmtpActorSystem.recipientCheckActor ! (localReceive, RecipientReq(ctx, addr), state, lock)
+    SmtpActorSystem.recipientCheckActor !(localReceive, RecipientReq(ctx, addr), state, lock)
     lock.await(2, TimeUnit.MINUTES)
   }
 
@@ -118,27 +114,38 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
   def data(data: InputStream) {
     val session = Session.getInstance(new Properties())
     val message = new MimeMessage(session, data)
+    val sender:String = state.get("sender").get()
+    val recip:String = state.get("recipient").get()
+    val mctx = MessageCtxDetails(ctx)
+    val inet = mctx.inet
+    val msg = Message[MimeMessage](inet, sender, recip, message.getSubject, message)
 
-    implicit val timeout = Timeout(2 minutes)
-    val future = SmtpActorSystem.messageCheckActor ? Message[MimeMessage](inet, sender.get, recip.get, message.getSubject, message)
-    Await.result(future, 2 minutes) match {
-      case msg: Message[MimeMessage] =>
-        val userFilter = SmtpActorSystem.userFilterActor ? msg
-        Await.result(userFilter, 2 minutes) match {
-          case msg: Message[MimeMessage] =>
-            SmtpActorSystem.persistMsgActor ! msg
-          case Reject(reason) =>
-            logger.debug("Reject data: reason: " + reason)
-            throw new RejectException(reason)
-        }
-      case Reject(reason) =>
-        logger.debug("Reject data ip: " + ip + " reason: " + reason)
-        throw new RejectException(reason)
-    }
+    val localReceive = SmtpActorSystem.system.actorOf(Props(new Actor {
+      override def receive: Receive = {
+        case (MsgCheckOk(ctx: MessageContext, msg: Message[MimeMessage]),
+        thatState: JHashMap[String, AtomicReference[String]]) =>
+
+          SmtpActorSystem.userFilterActor !(self, ctx, msg, thatState)
+
+        case (UsrFilterOk(ctx: MessageContext, msg: Message[MimeMessage]),
+        thatState: JHashMap[String, AtomicReference[String]]) =>
+
+          SmtpActorSystem.persistMsgActor !(self, ctx, msg, thatState)
+
+        case Reject(reason: String, ctx: MessageContext, addr: String) =>
+          val mctx = MessageCtxDetails(ctx)
+          val ip = mctx.ip
+
+          logger.warn("Reject data: <" + addr + "> (" + ip + ") reason: " + reason)
+          throw new RejectException(reason)
+      }
+    }))
+
+    SmtpActorSystem.messageCheckActor ! (localReceive, MsgCheckReq(ctx, msg), state)
   }
 
 
   def done() {
-    logger.debug("Finished at " + new Date().getTime)
+    logger.info("Finished at " + new Date().getTime)
   }
 }
