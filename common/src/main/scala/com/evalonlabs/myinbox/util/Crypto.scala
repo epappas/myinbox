@@ -1,8 +1,8 @@
 package com.evalonlabs.myinbox.util
 
 import java.security.MessageDigest
-import javax.crypto.spec.SecretKeySpec
-import javax.crypto.Cipher
+import javax.crypto.spec.{PBEKeySpec, SecretKeySpec}
+import javax.crypto.{SecretKeyFactory, Cipher}
 import org.subethamail.smtp.util.Base64
 
 object Crypto {
@@ -30,15 +30,19 @@ object Crypto {
     MessageDigest.getInstance("SHA-384").digest(str.getBytes)
   }
 
-  def encrypt(algorithm: String)(bytes: Array[Byte], secret: String): Array[Byte] = {
-    val secretKey = new SecretKeySpec(secret.getBytes("UTF-8"), algorithm)
+  def encrypt(algorithm: String)(bytes: Array[Byte], secret: String, salt: String): Array[Byte] = {
+    val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
+    val spec = new PBEKeySpec(secret.toCharArray, salt.getBytes, 1024, 128)
+    val secretKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded, algorithm)
     val cipher = Cipher.getInstance(algorithm + "/ECB/PKCS5Padding")
     cipher.init(Cipher.ENCRYPT_MODE, secretKey)
     cipher.doFinal(bytes)
   }
 
-  def decrypt(algorithm: String)(bytes: Array[Byte], secret: String): Array[Byte] = {
-    val secretKey = new SecretKeySpec(secret.getBytes("UTF-8"), algorithm)
+  def decrypt(algorithm: String)(bytes: Array[Byte], secret: String, salt: String): Array[Byte] = {
+    val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
+    val spec = new PBEKeySpec(secret.toCharArray, salt.getBytes, 1024, 128)
+    val secretKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded, algorithm)
     val cipher = Cipher.getInstance(algorithm + "/ECB/PKCS5Padding")
     cipher.init(Cipher.DECRYPT_MODE, secretKey)
     cipher.doFinal(bytes)
@@ -48,20 +52,20 @@ object Crypto {
 
   def fromBase64(str: String): Array[Byte]= Base64.decodeFast(str)
 
-  def inDES(bytes: Array[Byte], secret: String): Array[Byte] = encrypt("DES")(bytes: Array[Byte], secret: String)
+  def inDES(bytes: Array[Byte], secret: String, salt: String): Array[Byte] = encrypt("DES")(bytes: Array[Byte], secret: String, salt: String)
 
-  def inAES(bytes: Array[Byte], secret: String): Array[Byte] = encrypt("AES")(bytes: Array[Byte], secret: String)
+  def inAES(bytes: Array[Byte], secret: String, salt: String): Array[Byte] = encrypt("AES")(bytes: Array[Byte], secret: String, salt: String)
 
-  def inDES64(bytes: Array[Byte], secret: String): String = inBase64(inDES(bytes, secret))
+  def inDES64(bytes: Array[Byte], secret: String, salt: String): String = inBase64(inDES(bytes, secret, salt))
 
-  def inAES64(bytes: Array[Byte], secret: String): String = inBase64(inAES(bytes, secret))
+  def inAES64(bytes: Array[Byte], secret: String, salt: String): String = inBase64(inAES(bytes, secret, salt))
 
-  def fromDES(bytes: Array[Byte], secret: String): Array[Byte] = decrypt("DES")(bytes: Array[Byte], secret: String)
+  def fromDES(bytes: Array[Byte], secret: String, salt: String): Array[Byte] = decrypt("DES")(bytes: Array[Byte], secret: String, salt: String)
 
-  def fromAES(bytes: Array[Byte], secret: String): Array[Byte] = decrypt("AES")(bytes: Array[Byte], secret: String)
+  def fromAES(bytes: Array[Byte], secret: String, salt: String): Array[Byte] = decrypt("AES")(bytes: Array[Byte], secret: String, salt: String)
 
-  def fromDES64(str: String, secret: String): Array[Byte] = fromDES(fromBase64(str), secret)
+  def fromDES64(str: String, secret: String, salt: String): Array[Byte] = fromDES(fromBase64(str), secret, salt)
 
-  def fromAES64(str: String, secret: String): Array[Byte] = fromAES(fromBase64(str), secret)
+  def fromAES64(str: String, secret: String, salt: String): Array[Byte] = fromAES(fromBase64(str), secret, salt)
 
 }

@@ -5,7 +5,14 @@ object User {
 
   def getEncryptionKey(uKey: String): String = {
     // TODO get user's key from storage and return, block while waiting
-    ""
+    uKey.concat((1 to 128).foldLeft[String]("")((str, index) => {
+      str.concat(String.valueOf((Math.random() * 10 * index).toInt % 10))
+    }))
+  }
+
+  def getEncryptionSalt(uKey: String): String = {
+    // TODO get user's salt from storage and return, block while waiting
+    "random-salt"
   }
 
   def getUKey(mailAddr: String): String = {

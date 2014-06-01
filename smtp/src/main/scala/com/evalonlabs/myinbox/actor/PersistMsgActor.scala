@@ -22,8 +22,9 @@ class PersistMsgActor extends Actor with Logging {
       val messageID = UUID.get()
       val uKey = User.getUKey(message.to)
       val secret = User.getEncryptionKey(uKey)
+      val salt = User.getEncryptionSalt(uKey)
       val messageBody = Mail.toBytes(cleanMessage)
-      val encrypted = Crypto.inAES64(messageBody, secret)
+      val encrypted = Crypto.inAES64(messageBody, secret, salt)
       val compressed = Compress.zip(encrypted)
 
       try {
