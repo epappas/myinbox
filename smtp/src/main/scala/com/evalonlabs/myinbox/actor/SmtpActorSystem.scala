@@ -10,6 +10,6 @@ object SmtpActorSystem {
 	val recipientCheckActor = system.actorOf(Props[RecipientCheckActor].withRouter(FromConfig()), "recipient")
 	val messageCheckActor = system.actorOf(Props[MessageCheckActor].withRouter(FromConfig()), "msg")
   val userFilterActor = system.actorOf(Props[UserFilterActor].withRouter(FromConfig()), "userfilter")
-	val persistMsgActor = system.actorOf(Props[PersistMsgActor].withRouter(FromConfig()), "save")
+	val persistMsgActor = system.actorOf(Props[PersistMsgActor].withRouter(FromConfig()), "persist")
   val userPrefsActor = system.actorOf(Props[UserPrefsActor].withRouter(FromConfig()), "userprefs")
 }

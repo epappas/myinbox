@@ -85,7 +85,7 @@ class MainMessageHandler(ctx: MessageContext) extends MessageHandler with Loggin
 
         case (RecipientOk(ctx: MessageContext, addr: String, true),
         thatState: JHashMap[String, AtomicReference[String]],
-        lock: CountDownLatch, true) =>
+        lock: CountDownLatch) =>
 
           thatState.get("recipient").lazySet(addr)
           lock.countDown()

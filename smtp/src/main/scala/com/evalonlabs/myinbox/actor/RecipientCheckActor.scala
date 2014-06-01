@@ -2,8 +2,7 @@ package com.evalonlabs.myinbox.actor
 
 import akka.actor.{ActorRef, Actor}
 import com.typesafe.scalalogging.slf4j.Logging
-import com.evalonlabs.myinbox.model.{RecipientOk, RecipientReq, AliasAddr}
-import com.evalonlabs.myinbox.util.User
+import com.evalonlabs.myinbox.model.{RecipientOk, RecipientReq}
 import org.subethamail.smtp.MessageContext
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CountDownLatch
