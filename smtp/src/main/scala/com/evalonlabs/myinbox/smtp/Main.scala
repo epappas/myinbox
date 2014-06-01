@@ -27,7 +27,7 @@ object Main extends App with Logging {
     InetAddress.getByName(SafeConfig("myinbox.server.bind-address").getOrElse("127.0.0.1"))
   )
   smtpServer.setPort(
-    SafeConfig.getInt("myinbox.server.bind-port").getOrElse(25000)
+    SafeConfig.getInt("myinbox.server.bind-port").getOrElse(25)
   )
   smtpServer.setSoftwareName("myInbox")
 
