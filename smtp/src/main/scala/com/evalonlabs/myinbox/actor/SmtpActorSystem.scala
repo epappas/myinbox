@@ -6,10 +6,10 @@ import akka.routing.FromConfig
 object SmtpActorSystem {
 
 	val system = ActorSystem("MyInboxSystem")
-	val senderCheckActor = system.actorOf(Props[SenderCheckActor].withRouter(FromConfig()), "sender")
-	val recipientCheckActor = system.actorOf(Props[RecipientCheckActor].withRouter(FromConfig()), "recipient")
-	val messageCheckActor = system.actorOf(Props[MessageCheckActor].withRouter(FromConfig()), "msg")
-  val userFilterActor = system.actorOf(Props[UserFilterActor].withRouter(FromConfig()), "userfilter")
-	val persistMsgActor = system.actorOf(Props[PersistMsgActor].withRouter(FromConfig()), "persist")
-  val userPrefsActor = system.actorOf(Props[UserPrefsActor].withRouter(FromConfig()), "userprefs")
+	val senderCheckActor = system.actorOf(Props[SenderCheckActor])
+	val recipientCheckActor = system.actorOf(Props[RecipientCheckActor])
+	val messageCheckActor = system.actorOf(Props[MessageCheckActor])
+  val userFilterActor = system.actorOf(Props[UserFilterActor])
+	val persistMsgActor = system.actorOf(Props[PersistMsgActor])
+  val userPrefsActor = system.actorOf(Props[UserPrefsActor])
 }
