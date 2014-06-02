@@ -88,8 +88,8 @@ object Routes {
 
 class NotFoundCall(system: ContextSystem) extends RouteHandler {
 
-  override def handle(ctx: ChannelHandlerContext, path: String, params: util.Map[String, Object], request: HttpRequest): Unit = {
-    MyHttpResponse.sendNotFound(ctx, "NOT FOUND: " + path)
+  override def handle(ctx: ChannelHandlerContext, path: String, params: util.Map[String, Object], request: HttpRequest, msg: HttpContent): Unit = {
+    MyHttpResponse.sendNotFound(ctx, "{\"status\": 200, \"message\": \"NOT FOUND: " + path + " \"}")
   }
 }
 
