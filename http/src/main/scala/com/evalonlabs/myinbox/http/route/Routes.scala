@@ -4,8 +4,8 @@ package com.evalonlabs.myinbox.http.route
 import io.netty.channel.ChannelHandlerContext
 import com.evalonlabs.net.http.{ContextSystem, HttpResponse => MyHttpResponse, RouteHandler}
 import java.util
-import com.evalonlabs.myinbox.http.route.call.IndexCall
-import io.netty.handler.codec.http.HttpRequest
+import com.evalonlabs.myinbox.http.route.call.{Inbound, IndexCall}
+import io.netty.handler.codec.http.{HttpContent, HttpRequest}
 
 object Routes {
   def get(system: ContextSystem, path: String): RouteHandler = {
@@ -23,6 +23,8 @@ object Routes {
     path match {
       case index: String if path.matches("/") =>
         new NotFoundCall(system)
+      case page: String if path.matches("/inbound(/?)") =>
+        Inbound(system)
       case page: String if path.matches("/(.*)(/?)") =>
         new NotFoundCall(system)
       case _ =>
@@ -34,6 +36,8 @@ object Routes {
     path match {
       case index: String if path.matches("/") =>
         new NotFoundCall(system)
+      case page: String if path.matches("/inbound(/?)") =>
+        Inbound(system)
       case page: String if path.matches("/(.*)(/?)") =>
         new NotFoundCall(system)
       case _ =>
