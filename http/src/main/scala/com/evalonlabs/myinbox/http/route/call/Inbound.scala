@@ -6,7 +6,7 @@ import scala.collection.immutable.List
 import io.netty.handler.codec.http.{DefaultFullHttpRequest, HttpContent, HttpRequest}
 import io.netty.util.CharsetUtil
 import java.util
-import scala.util.parsing.json.JSONArray
+import scala.util.parsing.json.{JSON, JSONArray}
 
 class InboundCallHandler(system: ContextSystem) extends RouteHandler {
 
@@ -17,7 +17,11 @@ class InboundCallHandler(system: ContextSystem) extends RouteHandler {
     val headersPayload = new JSONArray(List(request.headers().entries()))
     val responsePayload = "{\"status\": 200, \"headers\": \"" + headersPayload + "\", \"message\": " + payload + "}"
 
+    JSON.parseFull(payload) match {
+      case Some(json) => println(json)
+    }
     println(responsePayload)
+
 
     MyHttpResponse.sendOk(ctx, responsePayload)
   }
