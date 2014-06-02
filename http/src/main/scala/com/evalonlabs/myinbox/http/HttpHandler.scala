@@ -55,10 +55,11 @@ class HttpHandler(system: ContextSystem) extends SimpleChannelInboundHandler[Any
   private def handleReq(ctx: ChannelHandlerContext, path: String, request: HttpRequest, msg: HttpContent) = request.getMethod.name match {
     case "GET" => Routes.get(system, path).handle(ctx, path, normalizedParams, this.request, null)
     case "POST" => Routes.post(system, path).handle(ctx, path, normalizedParams, this.request, msg)
-    case "PUT" => Routes.put(system, path).handle(ctx, path, normalizedParams, this.request, msg)
+    case "PUT"=> Routes.put(system, path).handle(ctx, path, normalizedParams, this.request, msg)
     case "OPTIONS" => Routes.options(system, path).handle(ctx, path, normalizedParams, this.request, null)
     case "DELETE" => Routes.delete(system, path).handle(ctx, path, normalizedParams, this.request, msg)
     case "PATCH" => Routes.patch(system, path).handle(ctx, path, normalizedParams, this.request, msg)
+    case _ => HttpResponse.sendError(ctx, "{}")
   }
 
   private def send100(ctx: ChannelHandlerContext) {
