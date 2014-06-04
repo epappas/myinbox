@@ -101,7 +101,23 @@
                             <jvmSettings>
                                 <initialMemorySize>300M</initialMemorySize>
                                 <maxMemorySize>300M</maxMemorySize>
-                                <maxStackSize>128M</maxStackSize>
+                                <maxStackSize>32M</maxStackSize>
+                                <extraArguments>
+                                    <extraArgument>-server</extraArgument>
+                                    <extraArgument>-Xmn100m</extraArgument>
+                                    <extraArgument>-XX:NewSize=32m</extraArgument>
+                                    <extraArgument>-XX:MaxNewSize=32m</extraArgument>
+                                    <extraArgument>-XX:PermSize=32m</extraArgument>
+                                    <extraArgument>-XX:MaxPermSize=32m</extraArgument>
+                                    <extraArgument>-XX:MaxDirectMemorySize=300M</extraArgument>
+                                    <extraArgument>-XX:+UseNUMA</extraArgument>
+                                    <extraArgument>-XX:+HeapDumpOnOutOfMemoryError</extraArgument>
+                                    <extraArgument>-XX:-UseBiasedLocking</extraArgument>
+                                    <extraArgument>-XX:+UseCompressedOops</extraArgument>
+                                    <extraArgument>-XX:+UseCondCardMark</extraArgument>
+                                    <extraArgument>-XX:+UseParallelGC</extraArgument>
+                                    <extraArgument>-XX:+UseParallelGC</extraArgument>
+                                </extraArguments>
                             </jvmSettings>
                             <platforms>
                                 <platform>jsw</platform>
@@ -137,7 +153,23 @@
                             <jvmSettings>
                                 <initialMemorySize>300M</initialMemorySize>
                                 <maxMemorySize>300M</maxMemorySize>
-                                <maxStackSize>128M</maxStackSize>
+                                <maxStackSize>32M</maxStackSize>
+                                <extraArguments>
+                                    <extraArgument>-server</extraArgument>
+                                    <extraArgument>-Xmn100m</extraArgument>
+                                    <extraArgument>-XX:NewSize=32m</extraArgument>
+                                    <extraArgument>-XX:MaxNewSize=32m</extraArgument>
+                                    <extraArgument>-XX:PermSize=32m</extraArgument>
+                                    <extraArgument>-XX:MaxPermSize=32m</extraArgument>
+                                    <extraArgument>-XX:MaxDirectMemorySize=300M</extraArgument>
+                                    <extraArgument>-XX:+UseNUMA</extraArgument>
+                                    <extraArgument>-XX:+HeapDumpOnOutOfMemoryError</extraArgument>
+                                    <extraArgument>-XX:-UseBiasedLocking</extraArgument>
+                                    <extraArgument>-XX:+UseCompressedOops</extraArgument>
+                                    <extraArgument>-XX:+UseCondCardMark</extraArgument>
+                                    <extraArgument>-XX:+UseParallelGC</extraArgument>
+                                    <extraArgument>-XX:+UseParallelGC</extraArgument>
+                                </extraArguments>
                             </jvmSettings>
                             <platforms>
                                 <platform>jsw</platform>
