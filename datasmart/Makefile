@@ -1,0 +1,22 @@
+START ?= rest_basic_auth
+NODE ?= rest_basic_auth
+REBAR ?= "./rebar"
+CONFIG ?= "priv/app.config"
+RUN := erl -pa ebin -pa deps/*/ebin -smp enable -boot start_sasl -config ${CONFIG} ${ERL_ARGS}
+
+all:
+	${REBAR} get-deps compile
+
+quick:
+	${REBAR} skip_deps=true compile
+
+clean:
+	${REBAR} clean
+
+quick_clean:
+	${REBAR} skip_deps=true clean
+
+run: quick
+	if [ -n "${NODE}" ]; then ${RUN} -name ${NODE}@`hostname` -s ${START}; \
+	else ${RUN} -s ${START}; \
+	fi
