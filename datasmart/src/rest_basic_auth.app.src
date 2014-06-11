@@ -1,0 +1,20 @@
+%%%-------------------------------------------------------------------
+%%% @author evangelosp
+%%% @copyright (C) 2014, evalonlabs
+%%% @doc
+%%%
+%%% @end
+%%%-------------------------------------------------------------------
+{application, rest_basic_auth, [
+	{description, "Cowboy Basic HTTP Authorization example."},
+	{vsn, "1"},
+	{modules, []},
+	{registered, [rest_basic_auth_sup]},
+	{applications, [
+		kernel,
+		stdlib,
+		cowboy
+	]},
+	{mod, {rest_basic_auth_app, []}},
+	{env, []}
+]}.
