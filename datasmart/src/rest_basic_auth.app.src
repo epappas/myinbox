@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 {application, rest_basic_auth, [
 	{description, "Cowboy Basic HTTP Authorization example."},
-	{vsn, "1"},
+	{vsn, "0.0.1"},
 	{modules, []},
 	{registered, [rest_basic_auth_sup]},
 	{applications, [
