@@ -1,5 +1,5 @@
-START ?= rest_basic_auth
-NODE ?= rest_basic_auth
+START ?= rest_store
+NODE ?= datastore
 REBAR ?= "./rebar"
 CONFIG ?= "priv/app.config"
 RUN := erl -pa ebin -pa deps/*/ebin -smp enable -boot start_sasl -config ${CONFIG} ${ERL_ARGS}

@@ -5,7 +5,7 @@
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(rest_basic_auth_app).
+-module(rest_store_app).
 -author("evangelosp").
 
 -behaviour(application).
@@ -21,18 +21,18 @@ start(_Type, _Args) ->
   {ok, _} = cowboy:start_http(http, 100, [{port, 8080}], [
     {env, [{dispatch, Dispatch}]}
   ]),
-	rest_basic_auth_sup:start_link().
+	rest_store_sup:start_link().
 
 stop(_State) ->
 	ok.
 
 %%% Routing
 compile() ->
-  List = [toppage_handler],
+  List = [index_handler],
   cowboy_router:compile([
     %% {URIHost, list({URIPath, Handler, Opts})}
     {'_', [route(Name) || Name <- List]}
   ]).
 
-route(toppage_handler) ->
-  {"/", toppage_handler, []}.
+route(index_handler) ->
+  {"/index", index_handler, []}.

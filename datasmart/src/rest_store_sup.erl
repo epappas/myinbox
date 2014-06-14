@@ -5,7 +5,7 @@
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(rest_basic_auth_sup).
+-module(rest_store_sup).
 -author("evangelosp").
 
 -behaviour(supervisor).

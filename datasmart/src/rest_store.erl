@@ -5,7 +5,7 @@
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(rest_basic_auth).
+-module(rest_store).
 -author("evangelosp").
 
 %% API.
@@ -17,4 +17,4 @@ start() ->
   application:start(ranch),
   application:start(cowlib),
   application:start(cowboy),
-  application:start(rest_basic_auth).
+  application:start(rest_store).

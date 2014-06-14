@@ -5,16 +5,16 @@
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
-{application, rest_basic_auth, [
-	{description, "Cowboy Basic HTTP Authorization example."},
+{application, rest_store, [
+	{description, "Message Index Store"},
 	{vsn, "0.0.1"},
 	{modules, []},
-	{registered, [rest_basic_auth_sup]},
+	{registered, [rest_store_sup]},
 	{applications, [
 		kernel,
 		stdlib,
 		cowboy
 	]},
-	{mod, {rest_basic_auth_app, []}},
+	{mod, {rest_store_app, []}},
 	{env, []}
 ]}.

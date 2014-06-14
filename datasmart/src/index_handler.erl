@@ -5,7 +5,7 @@
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(toppage_handler).
+-module(index_handler).
 -author("evangelosp").
 
 -export([init/3]).
