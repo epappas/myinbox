@@ -26,9 +26,22 @@ maybe_response(<<"POST">>, true, Req) ->
   CType = binary:bin_to_list(CtypeBin),
   [Actual_CType | _] = string:tokens(CType, ";"),
   case handle_body(string:to_lower(Actual_CType), Req) of
-    {ok, Body, _} -> echo(200, io_lib:format("{\"status\": 200, \"message\": \"~p\"}", [Body]), Req);
-    {error, Error, _} -> echo(400, io_lib:format("{\"status\": 400, \"message\": \"~p\"}", [Error]), Req);
-    _ -> echo(500, "{\"status\": 500, \"message\": \"~Uknown Error\"}", Req)
+    {ok, List, _} ->
+      echo(200, jiffy:encode({[
+        {status, ok},
+        {ukey, proplists:get_value(ukey, List, 0)},
+        {messageid, proplists:get_value(messageid, List, 0)}
+      ]}), Req);
+    {error, Error, _} ->
+      echo(400, jiffy:encode({[
+        {status, error},
+        {error, Error}
+      ]}), Req);
+    _ ->
+      echo(400, jiffy:encode({[
+        {status, error},
+        {error, "Uknown Error"}
+      ]}), Req)
   end;
 
 maybe_response(<<"POST">>, false, Req) ->
@@ -83,7 +96,8 @@ handle_body(_, Req) ->
 
 echo(Status, Echo, Req) ->
   cowboy_req:reply(Status, [
-    {<<"content-type">>, <<"application/json; charset=utf-8">>}
+    {<<"content-type">>, <<"application/json; charset=utf-8">>},
+    {<<"server">>, <<"myinbox-datastore">>}
   ], Echo, Req).
 
 terminate(_Reason, _Req, _State) ->
