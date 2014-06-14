@@ -23,45 +23,66 @@ handle(Req, State) ->
 
 maybe_response(<<"POST">>, true, Req) ->
   {CtypeBin, _} = cowboy_req:header(<<"content-type">>, Req),
-  Ctype = binary:bin_to_list(CtypeBin),
-  [Actual_Ctype | _] = string:tokens(Ctype, ";"),
-  io:format("~p", [Actual_Ctype]),
-  case handle_body(string:to_lower(Actual_Ctype), Req) of
-    X -> echo(io_lib:format("{\"status\": 200, \"message\": \"nice! ~p\"}", [X]), Req)
+  CType = binary:bin_to_list(CtypeBin),
+  [Actual_CType | _] = string:tokens(CType, ";"),
+  case handle_body(string:to_lower(Actual_CType), Req) of
+    {ok, Body, _} -> echo(200, io_lib:format("{\"status\": 200, \"message\": \"~p\"}", [Body]), Req);
+    {error, Error, _} -> echo(400, io_lib:format("{\"status\": 400, \"message\": \"~p\"}", [Error]), Req);
+    _ -> echo(500, "{\"status\": 500, \"message\": \"~Uknown Error\"}", Req)
   end;
 
 maybe_response(<<"POST">>, false, Req) ->
-  cowboy_req:reply(400, [], <<"Missing body.">>, Req);
+  echo(400, "Missing body.", Req);
 
 maybe_response(_, _, Req) ->
-  %% Method not allowed.
-  cowboy_req:reply(405, Req).
+  echo(405, "Method not allowed.", Req).
 
 handle_body("text/plain", Req) ->
-  io:format("111111"),
-  {ok, 200, "text/plain :)", Req};
-handle_body("application/json", Req) ->
-  io:format("222222"),
-  {ok, 200, "text/plain :)", Req};
-handle_body("application/x-www-form-urlencoded", Req) ->
-  io:format("3333333"),
-%%   {ok, PostVals, Req2} = cowboy_req:body_qs(Req),
-%%   case {
-%%     proplists:is_defined(<<"echo">>, PostVals),
-%%     proplists:is_defined(<<"echo">>, PostVals)
-%%   }
-%%   of
-%%     {true, true} ->
-%%       Echo = proplists:get_value(<<"echo">>, PostVals),
-%%       echo(Echo, Req2);
-%%     _ -> cowboy_req:reply(400, [], <<"Bad body Request.">>, Req)
-%%   end,
-  {ok, 200, "application/x-www-form-urlencoded :)", Req};
-handle_body(_, Req) ->
-  {error, 400, <<"{\"status\": 400, \"error\": \"Bad body Request.\"}">>, Req}.
+  {ok, Body, Req2} = cowboy_req:body(Req),
+  try jiffy:decode(Body) of
+    {Json} -> {ok, [{binary_to_atom(Key, utf8), Val} || {Key, Val} <- Json], Req2}
+  catch
+    _ -> {error, "Bad body Request", Req2}
+  end;
 
-echo(Echo, Req) ->
-  cowboy_req:reply(200, [
+handle_body("application/json", Req) ->
+  {ok, Body, Req2} = cowboy_req:body(Req),
+  try jiffy:decode(Body) of
+    {Json} -> {ok, [{binary_to_atom(Key, utf8), Val} || {Key, Val} <- Json], Req2}
+  catch
+    _ -> {error, "Bad body Request", Req2}
+  end;
+
+handle_body("application/x-www-form-urlencoded", Req) ->
+  {ok, PostVals, _} = cowboy_req:body_qs(Req),
+  case {
+    proplists:is_defined(<<"from">>, PostVals),
+    proplists:is_defined(<<"to">>, PostVals),
+    proplists:is_defined(<<"ukey">>, PostVals),
+    proplists:is_defined(<<"messageid">>, PostVals),
+    proplists:is_defined(<<"date">>, PostVals),
+    proplists:is_defined(<<"subject">>, PostVals),
+    proplists:is_defined(<<"body">>, PostVals)
+  }
+  of
+    {true, true} ->
+      {ok, [
+        {messageid, proplists:get_value(<<"messageid">>, PostVals)},
+        {from, proplists:get_value(<<"from">>, PostVals)},
+        {to, proplists:get_value(<<"to">>, PostVals)},
+        {ukey, proplists:get_value(<<"ukey">>, PostVals)},
+        {date, proplists:get_value(<<"date">>, PostVals)},
+        {subject, proplists:get_value(<<"subject">>, PostVals)},
+        {body, proplists:get_value(<<"body">>, PostVals)}
+      ], Req};
+    _ -> {error, "Bad Query parameters", Req}
+  end;
+
+handle_body(_, Req) ->
+  {error, "Bad body Request", Req}.
+
+echo(Status, Echo, Req) ->
+  cowboy_req:reply(Status, [
     {<<"content-type">>, <<"application/json; charset=utf-8">>}
   ], Echo, Req).
 
