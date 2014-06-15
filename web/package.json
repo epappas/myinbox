@@ -1,0 +1,35 @@
+{
+  "name": "myinboxweb",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Web server of myinbox",
+  "main": "app.js",
+  "scripts": {
+    "start": "node ./app.js",
+    "test": "mocha /test/"
+  },
+  "author": "Evangelos Pappas <epappas@evalonlabs.com>",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:epappas/myinbox.git"
+  },
+  "dependencies": {
+    "body-parser": "~1.0.0",
+    "connect-redis": "^2.0.0",
+    "cookie-parser": "~1.0.1",
+    "debug": "~0.7.4",
+    "express": "~4.2.0",
+    "express-session": "^1.2.1",
+    "jade": "~1.3.0",
+    "mongoose": "^3.8.11",
+    "morgan": "~1.0.0",
+    "redis": "^0.10.3",
+    "hiredis": "^0.1.16",
+    "static-favicon": "~1.0.0"
+  },
+  "devDependencies": {
+    "mocha": "^1.20.0",
+    "should": "^3.3.2",
+    "superagent": "^0.18.0"
+  }
+}

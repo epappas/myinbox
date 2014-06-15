@@ -1,0 +1,16 @@
+{
+  "name": "MyInbox Web",
+  "version": "0.0.1",
+  "main": "index.html",
+  "ignore": [
+    "**/.*",
+    "libs"
+  ],
+  "dependencies": {
+    "angular": "1.2.1",
+    "angular-route": "1.2.1",
+    "requirejs": "latest",
+    "requirejs-domready": "latest",
+    "angular-bootstrap": "latest"
+  }
+}
