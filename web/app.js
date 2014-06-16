@@ -6,6 +6,7 @@ var path = require('path');
 var favicon = require('static-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
+var compress = require('compression');
 var bodyParser = require('body-parser');
 var session = require('express-session')
 var RedisStore = require('connect-redis')(session);
@@ -40,6 +41,7 @@ app.use(session({
 
 require('./routes/index')(app, redisCon);
 require('./routes/fake-routes')(app, redisCon);
+require('./routes/auth')(app, redisCon);
 
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
