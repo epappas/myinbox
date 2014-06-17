@@ -34,21 +34,31 @@ maybe_response(<<"POST">>, true, Req) ->
       ]}), Req);
     {error, Error, _} ->
       echo(400, jiffy:encode({[
+        {code, 400},
         {status, error},
         {error, Error}
       ]}), Req);
     _ ->
       echo(400, jiffy:encode({[
+        {code, 400},
         {status, error},
         {error, "Uknown Error"}
       ]}), Req)
   end;
 
 maybe_response(<<"POST">>, false, Req) ->
-  echo(400, "Missing body.", Req);
+  echo(400, jiffy:encode({[
+    {code, 400},
+    {status, error},
+    {error, "Missing body."}
+  ]}), Req);
 
 maybe_response(_, _, Req) ->
-  echo(405, "Method not allowed.", Req).
+  echo(405, jiffy:encode({[
+    {code, 405},
+    {status, error},
+    {error, "Method not allowed."}
+  ]}), Req).
 
 handle_body("text/plain", Req) ->
   {ok, Body, Req2} = cowboy_req:body(Req),
