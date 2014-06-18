@@ -1,33 +1,46 @@
 package com.evalonlabs.myinbox.util
 
 import java.security.MessageDigest
-import javax.crypto.spec.{PBEKeySpec, SecretKeySpec}
-import javax.crypto.{SecretKeyFactory, Cipher}
+import javax.crypto.spec.SecretKeySpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.Cipher
+import javax.crypto.SecretKeyFactory
 import org.subethamail.smtp.util.Base64
 
 object Crypto {
-  def md5(str: String) {
-    MessageDigest.getInstance("MD5").digest(str.getBytes)
+
+  def md5(str: String) = {
+    bytesToHex(MessageDigest.getInstance("MD5").digest(str.getBytes))
   }
 
   def md2(str: String) {
-    MessageDigest.getInstance("MD2").digest(str.getBytes)
+    bytesToHex(MessageDigest.getInstance("MD2").digest(str.getBytes))
   }
 
   def sha1(str: String) {
-    MessageDigest.getInstance("SHA-1").digest(str.getBytes)
+    bytesToHex(MessageDigest.getInstance("SHA-1").digest(str.getBytes))
   }
 
   def sha256(str: String) {
-    MessageDigest.getInstance("SHA-256").digest(str.getBytes)
+    bytesToHex(MessageDigest.getInstance("SHA-256").digest(str.getBytes))
   }
 
   def sha384(str: String) {
-    MessageDigest.getInstance("SHA-384").digest(str.getBytes)
+    bytesToHex(MessageDigest.getInstance("SHA-384").digest(str.getBytes))
   }
 
   def sha512(str: String) {
-    MessageDigest.getInstance("SHA-384").digest(str.getBytes)
+    bytesToHex(MessageDigest.getInstance("SHA-512").digest(str.getBytes))
+  }
+
+  def bytesToHex(b: Array[Byte]): String = {
+    val hexDigit: Array[Char] = Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
+    val buf: StringBuilder = new StringBuilder
+    for (aB <- b) {
+      buf.append(hexDigit((aB >> 4) & 0x0f))
+      buf.append(hexDigit(aB & 0x0f))
+    }
+    buf.toString()
   }
 
   def encrypt(algorithm: String)(bytes: Array[Byte], secret: String, salt: String): Array[Byte] = {
@@ -67,5 +80,4 @@ object Crypto {
   def fromDES64(str: String, secret: String, salt: String): Array[Byte] = fromDES(fromBase64(str), secret, salt)
 
   def fromAES64(str: String, secret: String, salt: String): Array[Byte] = fromAES(fromBase64(str), secret, salt)
-
 }

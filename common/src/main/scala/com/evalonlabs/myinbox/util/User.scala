@@ -16,7 +16,7 @@ object User {
   }
 
   def getUKey(mailAddr: String): String = {
-    Crypto.md5(mailAddr).toString
+    Crypto.md5(mailAddr)
   }
 
   def addressFromAlias(alias: String): String = {
