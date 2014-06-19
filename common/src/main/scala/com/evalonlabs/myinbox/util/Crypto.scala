@@ -63,7 +63,7 @@ object Crypto {
 
   def inBase64(bytes: Array[Byte]): String = Base64.encodeToString(bytes, true)
 
-  def fromBase64(str: String): Array[Byte]= Base64.decodeFast(str)
+  def fromBase64(str: String): Array[Byte]= Base64.decode(str)
 
   def inDES(bytes: Array[Byte], secret: String, salt: String): Array[Byte] = encrypt("DES")(bytes: Array[Byte], secret: String, salt: String)
 
