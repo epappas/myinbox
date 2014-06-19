@@ -23,4 +23,8 @@ object Inbox extends Object with Redis {
   def tag(uKey: String, messageId: String, tag: String) {
     redis.rpush(inboxTagLSKey(uKey), tag, messageId)
   }
+
+  def get(recipient: String, messageID: String): String = {
+    redis.hget[String](inboxHSKey(recipient), messageID).orNull
+  }
 }
