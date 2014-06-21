@@ -1,17 +1,21 @@
 {
   "name": "myinboxweb",
   "version": "0.0.1",
-  "private": true,
+  "license": "MIT",
   "description": "Web server of myinbox",
   "main": "app.js",
   "scripts": {
     "start": "node ./app.js",
-    "test": "mocha /test/"
+    "test": "mocha ./test/"
   },
   "author": "Evangelos Pappas <epappas@evalonlabs.com>",
+  "homepage": "https://github.com/epappas/myinbox",
   "repository": {
     "type": "git",
     "url": "git@github.com:epappas/myinbox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/epappas/myinbox/issues"
   },
   "dependencies": {
     "body-parser": "~1.0.0",
