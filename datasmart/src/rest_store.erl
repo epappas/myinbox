@@ -14,6 +14,7 @@
 %% API.
 start() ->
   application:start(crypto),
+  application:start(bcrypt),
   application:start(ranch),
   application:start(cowlib),
   application:start(cowboy),
