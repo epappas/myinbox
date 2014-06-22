@@ -26,11 +26,12 @@ maybe_response(<<"POST">>, true, Req) ->
   CType = binary:bin_to_list(CtypeBin),
   [Actual_CType | _] = string:tokens(CType, ";"),
   case handle_body(string:to_lower(Actual_CType), Req) of
-    {ok, List, _} ->
+    {ok, GivenJson, _} ->
+      Json = ensureJson(GivenJson),
       echo(200, jiffy:encode({[
         {status, ok},
-        {ukey, proplists:get_value(ukey, List, 0)},
-        {messageid, proplists:get_value(messageid, List, 0)}
+        {ukey, proplists:get_value(ukey, Json, 0)},
+        {messageid, proplists:get_value(messageid, Json, 0)}
       ]}), Req);
     {error, Error, _} ->
       echo(400, jiffy:encode({[
@@ -82,7 +83,7 @@ handle_body("application/x-www-form-urlencoded", Req) ->
     proplists:is_defined(<<"from">>, PostVals),
     proplists:is_defined(<<"to">>, PostVals),
     proplists:is_defined(<<"ukey">>, PostVals),
-    proplists:is_defined(<<"messageid">>, PostVals),
+%%     proplists:is_defined(<<"messageid">>, PostVals),
     proplists:is_defined(<<"date">>, PostVals),
     proplists:is_defined(<<"subject">>, PostVals),
     proplists:is_defined(<<"body">>, PostVals)
@@ -90,13 +91,14 @@ handle_body("application/x-www-form-urlencoded", Req) ->
   of
     {true, true} ->
       {ok, [
-        {messageid, proplists:get_value(<<"messageid">>, PostVals)},
+%%         {messageid, proplists:get_value(<<"messageid">>, PostVals)},
         {from, proplists:get_value(<<"from">>, PostVals)},
         {to, proplists:get_value(<<"to">>, PostVals)},
         {ukey, proplists:get_value(<<"ukey">>, PostVals)},
         {date, proplists:get_value(<<"date">>, PostVals)},
         {subject, proplists:get_value(<<"subject">>, PostVals)},
-        {body, proplists:get_value(<<"body">>, PostVals)}
+        {body, proplists:get_value(<<"body">>, PostVals)},
+        {meta, proplists:get_value(<<"meta">>, PostVals, [])}
       ], Req};
     _ -> {error, "Bad Query parameters", Req}
   end;
@@ -112,3 +114,15 @@ echo(Status, Echo, Req) ->
 
 terminate(_Reason, _Req, _State) ->
   ok.
+
+ensureJson(Json) ->
+  [
+    {messageid, proplists:get_value(<<"messageid">>, Json, uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))))},
+    {from, proplists:get_value(<<"from">>, Json)},
+    {to, proplists:get_value(<<"to">>, Json)},
+    {ukey, proplists:get_value(<<"ukey">>, Json)},
+    {date, proplists:get_value(<<"date">>, Json)},
+    {subject, proplists:get_value(<<"subject">>, Json)},
+    {body, proplists:get_value(<<"body">>, Json)},
+    {meta, proplists:get_value(<<"meta">>, Json, [])}
+  ].
