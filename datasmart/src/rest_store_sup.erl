@@ -53,8 +53,12 @@ init([]) ->
       {rest_store_sup, start_listeners, []},
       permanent, 1000, worker,
       [rest_store_sup]},
-    {myredis_serve,
-      {myredis, start_link, []},
+    {qredis,
+      {qredis, start_link, []},
       permanent, 1000, worker,
-      [myredis]}
+      [qredis]},
+    {user_server,
+      {user_server, start_link, []},
+      permanent, 1000, worker,
+      [user_server]}
   ]}}.
