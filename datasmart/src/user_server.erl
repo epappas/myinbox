@@ -54,7 +54,7 @@ init([]) ->
   {ok, #state{}}.
 
 handle_call({register, Email, Password}, _From, State) ->
-  MD5Key = binary_to_list(erlang:md5(Email)),
+  MD5Key = hash_md5:build(Email),
   Secret = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
   Salt = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
   case qredis:q(["GET", lists:concat(["datasmart:users:", MD5Key, ":profile"])]) of
@@ -73,36 +73,13 @@ handle_call({register, Email, Password}, _From, State) ->
   end;
 
 handle_call({getukey, Email}, _From, State) ->
-  case qredis:q(["HGET", "datasmart:alias:keys", Email]) of
-    {ok, Ukey} -> {ok, binary_to_list(Ukey)};
-    _ -> {reply, {error, "Registration Failure"}, State}
-  end;
+  {reply, doGetukey(Email), State};
 
 handle_call({getuser, Ukey}, _From, State) ->
-  case qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":profile"])]) of
-    {ok, Result} ->
-      {Json} = jiffy:decode(Result),
-      User = [{binary_to_atom(Key, utf8), Val} || {Key, Val} <- Json],
-      {ok, User};
-    _ -> {reply, {error, "No User was Found"}, State}
-  end;
+  {reply, doGetUser(Ukey), State};
 
 handle_call({checkuser, Email, Password}, _From, State) ->
-  case gen_server:call(?MODULE, {getukey, Email}) of
-    {ok, Ukey} ->
-      case qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":salt"])]) of
-        {ok, BSalt} ->
-          Salt = binary_to_list(BSalt),
-          HashPass = hashPass(Password, Salt, 20),
-          {ok, User} = gen_server:call(?MODULE, {getuser, Ukey}),
-          UserPass = proplists:get_value(password, User),
-          case UserPass =:= HashPass of
-            true -> {ok, Ukey};
-            false -> {error, false}
-          end
-      end;
-    _ -> {reply, {error, "Wrong User Details"}, State}
-  end.
+  {reply, doCheckuser(Email, Password), State}.
 
 handle_cast(_Request, State) ->
   {noreply, State}.
@@ -120,11 +97,46 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+doCheckuser(Email, Password) ->
+  case doGetukey(Email) of
+    {ok, Ukey} ->
+      case qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":salt"])]) of
+        {ok, undefined} -> {error, "Wrong User Details"};
+        {ok, BSalt} ->
+          Salt = binary_to_list(BSalt),
+          HashPass = hashPass(Password, Salt, 20),
+          {ok, User} = doGetUser(Ukey),
+          UserPass = proplists:get_value(password, User),
+          case UserPass =:= HashPass of
+            true -> {ok, Ukey};
+            false -> {error, false}
+          end;
+        _ -> {error, "Something Went wrong getting User's Details"}
+      end;
+    _ -> {error, "Wrong User Details"}
+  end.
+
+doGetukey(Email) ->
+  case qredis:q(["HGET", "datasmart:alias:keys", Email]) of
+    {ok, undefined} -> {error, "Uknown Email"};
+    {ok, Ukey} -> {ok, binary_to_list(Ukey)};
+    _ -> {error, "Uknown Email"}
+  end.
+
+doGetUser(Ukey) ->
+  case qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":profile"])]) of
+    {ok, Result} ->
+      {Json} = jiffy:decode(Result),
+      User = [{binary_to_atom(Key, utf8), Val} || {Key, Val} <- Json],
+      {ok, User};
+    _ -> {error, "No User was Found"}
+  end.
+
 hashPass(Password, Salt, 0) ->
-  erlang:md5( lists:concat([Password, Salt]) );
+  hash_md5:build( lists:concat([Password, Salt]) );
 
 hashPass(Password, Salt, Factor) when (Factor rem 2) > 0 ->
-  hashPass(erlang:md5( lists:concat([Password, Salt]) ), Salt, Factor - 1 );
+  hashPass(hash_md5:build( lists:concat([Password, Salt]) ), Salt, Factor - 1 );
 
 hashPass(Password, Salt, Factor) ->
-  hashPass(erlang:md5( lists:concat([Salt, Password]) ), Salt, Factor - 1 ).
+  hashPass(hash_md5:build( lists:concat([Salt, Password]) ), Salt, Factor - 1 ).
