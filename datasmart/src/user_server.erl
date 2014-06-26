@@ -16,6 +16,8 @@
   register/2,
   getukey/1,
   getuser/1,
+  encrypt/3,
+  dencrypt/3,
   checkuser/2
 ]).
 
@@ -43,6 +45,14 @@ register(Email, Password) -> gen_server:call(?MODULE, {register, Email, Password
 getukey(Email) -> gen_server:call(?MODULE, {getukey, Email}).
 
 getuser(Ukey) -> gen_server:call(?MODULE, {getuser, Ukey}).
+
+encrypt(Ukey, Text, IVec) ->
+  {ok, Secret} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":secret"])]),
+  {ok, crypto:des_cbc_encrypt(Secret, IVec, Text)}.
+
+dencrypt(Ukey, Text, IVec) ->
+  {ok, Secret} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":secret"])]),
+  {ok, crypto:des_cbc_decrypt(Secret, IVec, Text)}.
 
 checkuser(Email, Password) -> gen_server:call(?MODULE, {checkuser, Email, Password}).
 
