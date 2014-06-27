@@ -36,6 +36,26 @@ start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 store(MessageID, Ukey, Message) ->
+  gen_server:cast(?MODULE, {store, MessageID, Ukey, Message}),
+  {ok, MessageID}.
+
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
+
+init([]) ->
+  {ok, #state{}}.
+
+handle_call({compress, Message}, _From, State) -> {reply, {ok, doCompress(Message)}, State};
+
+handle_call({index, Message}, _From, State) -> {reply, {ok, doCompress(Message)}, State};
+
+handle_call({store, Message}, _From, State) -> {reply, {ok, doCompress(Message)}, State};
+
+handle_call(_Request, _From, State) ->
+  {reply, ok, State}.
+
+handle_cast({store, MessageID, Ukey, Message}, State) ->
   Now = os:timestamp(),
   IVec = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
   Body = proplists:get_value(body, Message),
@@ -57,23 +77,7 @@ store(MessageID, Ukey, Message) ->
   qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:ivec"]), MessageID, IVec]),
   qredis:q(["SADD", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), Now, MessageID]),
 
-  {ok, Compressed}.
-
-%%%===================================================================
-%%% gen_server callbacks
-%%%===================================================================
-
-init([]) ->
-  {ok, #state{}}.
-
-handle_call({compress, Message}, _From, State) -> {reply, {ok, doCompress(Message)}, State};
-
-handle_call({index, Message}, _From, State) -> {reply, {ok, doCompress(Message)}, State};
-
-handle_call({store, Message}, _From, State) -> {reply, {ok, doCompress(Message)}, State};
-
-handle_call(_Request, _From, State) ->
-  {reply, ok, State}.
+  {noreply, State};
 
 handle_cast(_Request, State) ->
   {noreply, State}.
