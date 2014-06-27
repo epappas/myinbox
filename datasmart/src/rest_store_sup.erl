@@ -60,5 +60,9 @@ init([]) ->
     {user_server,
       {user_server, start_link, []},
       permanent, 1000, worker,
-      [user_server]}
+      [user_server]},
+    {message_server,
+      {message_server, start_link, []},
+      permanent, 1000, worker,
+      [message_server]}
   ]}}.
