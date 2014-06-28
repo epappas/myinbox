@@ -15,6 +15,8 @@
 -export([start_link/0,
   register/2,
   getukey/1,
+  match_ouKey/1,
+  match_auKey/1,
   getuser/1,
   encrypt/3,
   dencrypt/3,
@@ -43,6 +45,10 @@ start_link() ->
 register(Email, Password) -> gen_server:call(?MODULE, {register, Email, Password}).
 
 getukey(Email) -> gen_server:call(?MODULE, {getukey, Email}).
+
+match_ouKey(OUkey) -> gen_server:call(?MODULE, {match_ouKey, OUkey}).
+
+match_auKey(AUkey) -> gen_server:call(?MODULE, {match_auKey, AUkey}).
 
 getuser(Ukey) -> gen_server:call(?MODULE, {getuser, Ukey}).
 
@@ -84,6 +90,12 @@ handle_call({register, Email, Password}, _From, State) ->
 
 handle_call({getukey, Email}, _From, State) ->
   {reply, doGetukey(Email), State};
+
+handle_call({match_ouKey, OUkey}, _From, State) ->
+  {reply, doMatchOUKey(OUkey), State};
+
+handle_call({match_auKey, AUkey}, _From, State) ->
+  {reply, doMatchAUKey(AUkey), State};
 
 handle_call({getuser, Ukey}, _From, State) ->
   {reply, doGetUser(Ukey), State};
@@ -131,6 +143,20 @@ doGetukey(Email) ->
     {ok, undefined} -> {error, "Uknown Email"};
     {ok, Ukey} -> {ok, binary_to_list(Ukey)};
     _ -> {error, "Uknown Email"}
+  end.
+
+doMatchOUKey(OUKey) ->
+  case qredis:q(["GET", lists:concat(["datasmart:openkey:", OUKey])]) of
+    {ok, undefined} -> {error, "Uknown Key"};
+    {ok, Ukey} -> {ok, binary_to_list(Ukey)};
+    _ -> {error, "Uknown Key"}
+  end.
+
+doMatchAUKey(AUKey) ->
+  case qredis:q(["GET", lists:concat(["datasmart:acesskey:", AUKey])]) of
+    {ok, undefined} -> {error, "Uknown Key"};
+    {ok, Ukey} -> {ok, binary_to_list(Ukey)};
+    _ -> {error, "Uknown Key"}
   end.
 
 doGetUser(Ukey) ->
