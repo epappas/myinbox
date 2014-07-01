@@ -34,14 +34,29 @@ start_link() ->
 
 %%% Routing
 compile() ->
-  List = [index_handler],
+  List = [root_handler],
   cowboy_router:compile([
     %% {URIHost, list({URIPath, Handler, Opts})}
     {'_', [route(Name) || Name <- List]}
   ]).
 
+route(root_handler) ->
+  {"/", index_handler, []};
+
 route(index_handler) ->
-  {"/index", index_handler, []}.
+  {"/index", index_handler, []};
+
+route(user_handler) ->
+  {"/user", user_handler, []};
+
+route(message_handler) ->
+  {"/message", message_handler, []};
+
+route(status_handler) ->
+  {"/inbox", inbox_handler, []};
+
+route(status_handler) ->
+  {"/status", index_handler, []}.
 
 
 %% supervisor.
@@ -66,3 +81,4 @@ init([]) ->
       permanent, 1000, worker,
       [message_server]}
   ]}}.
+
