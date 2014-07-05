@@ -71,15 +71,16 @@ init([]) ->
 
 handle_call({register, Email, Password}, _From, State) ->
   MD5Key = hash_md5:build(Email),
+  OUKey = hashPass(MD5Key, "openkey", 2),
   Secret = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
   Salt = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
   case qredis:q(["GET", lists:concat(["datasmart:users:", MD5Key, ":profile"])]) of
     {ok, undefined} ->
       qredis:q(["SET", lists:concat(["datasmart:users:", MD5Key, ":profile"]), jiffy:encode({[
-        {email, Email},
-        {ukey, MD5Key},
-        {password, hashPass(Password, Salt, 20)}
+        {email, Email}
       ]})]),
+      qredis:q(["SET", lists:concat(["datasmart:openkey:", OUKey]), MD5Key]),
+      qredis:q(["SET", lists:concat(["datasmart:users:", MD5Key, ":password"]), hashPass(Password, Salt, 20)]),
       qredis:q(["SET", lists:concat(["datasmart:users:", MD5Key, ":salt"]), Salt]),
       qredis:q(["SET", lists:concat(["datasmart:users:", MD5Key, ":secret"]), Secret]),
       qredis:q(["HSET", "datasmart:alias", Email, Email]),
