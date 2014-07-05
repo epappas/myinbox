@@ -23,7 +23,7 @@ handle(Req, State) ->
 maybe_response(<<"GET">>, Req) ->
   {Messageid, Req2} = cowboy_req:qs_val(<<"messageid">>, Req),
   {OUkey, Req3} = cowboy_req:qs_val(<<"user">>, Req2),
-  case handle_query(OUkey, Messageid, Req3) of
+  case handle_query({msginfo, OUkey, Messageid}, true, Req3) of
     {message, Message, _} ->
       echo(400, jiffy:encode(Message), Req);
     _ ->
@@ -41,7 +41,7 @@ maybe_response(_, Req) ->
     {error, "Method not allowed."}
   ]}), Req).
 
-handle_query(OUkey, Messageid, Req) ->
+handle_query({msginfo, OUkey, Messageid}, _, Req) ->
   {ok, _Ukey} = user_server:match_ouKey(OUkey),
 %%   TODO Fetch Message info
   {message, ensureMessageJson([
