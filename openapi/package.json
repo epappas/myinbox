@@ -7,26 +7,29 @@
   "homepage": "https://github.com/epappas/myinbox",
   "main": "server.js",
   "repository": {
-      "type": "git",
-      "url": "git@github.com:epappas/myinbox.git"
+    "type": "git",
+    "url": "git@github.com:epappas/myinbox.git"
   },
   "scripts": {
     "start": "node ./server.js",
     "test": "mocha ./test/"
   },
   "dependencies": {
-      "debug": "~0.7.4",
-      "hiredis": "^0.1.16",
-      "passport": "^0.2.0",
-      "passport-facebook": "^1.0.3",
-      "passport-local": "^1.0.0",
-      "passport-oauth": "^1.0.0",
-      "passport-twitter": "^1.0.2",
-      "redis": "^0.10.3"
+    "bunyan": "^0.23.1",
+    "debug": "~0.7.4",
+    "hiredis": "^0.1.16",
+    "nconf": "^0.6.9",
+    "passport": "^0.2.0",
+    "passport-facebook": "^1.0.3",
+    "passport-local": "^1.0.0",
+    "passport-oauth": "^1.0.0",
+    "passport-twitter": "^1.0.2",
+    "redis": "^0.10.3",
+    "restify": "^2.8.1"
   },
   "devDependencies": {
-      "mocha": "^1.20.0",
-      "should": "^3.3.2",
-      "superagent": "^0.18.0"
+    "mocha": "^1.20.0",
+    "should": "^3.3.2",
+    "superagent": "^0.18.0"
   }
 }
