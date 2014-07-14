@@ -14,7 +14,8 @@
 -export([start_link/0,
   store/3,
   index/3,
-  msginfo/2
+  msginfo/2,
+  msgList/4
 ]).
 
 %% gen_server callbacks
@@ -45,8 +46,13 @@ index(MessageID, Ukey, Message) ->
   {ok, MessageID}.
 
 msginfo(MessageID, Ukey) ->
-  gen_server:call(?MODULE, {msginfo, MessageID, Ukey}),
-  {ok, MessageID}.
+  {ok, gen_server:call(?MODULE, {msginfo, MessageID, Ukey})}.
+
+msgList(date, Ukey, FromTS, ToTS) ->
+  {ok, gen_server:call(?MODULE, {listbydate, Ukey, FromTS, ToTS})};
+
+msgList(numeric, Ukey, FromN, ToN) ->
+  {ok, gen_server:call(?MODULE, {listbynumeric, Ukey, FromN, ToN})}.
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -68,8 +74,7 @@ handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
 handle_cast({store, MessageID, Ukey, Message}, State) ->
-  {MegaSecs, Secs, MicroSecs} = os:timestamp(),
-  Now = (MegaSecs * 1000000000000) + (Secs * 1000000) + MicroSecs,
+  Now = ds_util:timestamp(),
   IVec = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
   Body = proplists:get_value(body, Message),
   Copydrip = string:substr(Body, 1, 20),
@@ -140,13 +145,19 @@ fetchMsginfo(MessageID, Ukey) ->
   {ok, Subject} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:subject"]), MessageID]),
   {ok, From} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), MessageID]),
   {ok, IVec} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:ivec"]), MessageID]),
+  {ok, Email} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":profile"]), "email"]),
+  {ok, Timestamp} = qredis:q(["ZSCORE", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), MessageID]),
 
+%% TODO Fetch Date from the List
   Decompressed = doUncompress(Compressed),
   Encrypted = base64:decode_to_string(Decompressed),
   {ok, Dencrypted} = user_server:dencrypt(Ukey, IVec, Encrypted),
 
   {[
+    {messageid, MessageID},
     {from, From},
+    {to, Email},
+    {date, Timestamp},
     {subject, Subject},
     {body, Dencrypted},
     {meta, jiffy:decode(MetaJson)}
