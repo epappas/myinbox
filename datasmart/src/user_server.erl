@@ -1,10 +1,9 @@
 %%%-------------------------------------------------------------------
 %%% @author evangelosp
-%%% @copyright (C) 2014, <COMPANY>
+%%% @copyright (C) 2014, evalonlabs
 %%% @doc
 %%%
 %%% @end
-%%% Created : 23. Jun 2014 21:59
 %%%-------------------------------------------------------------------
 -module(user_server).
 -author("evangelosp").
@@ -18,6 +17,7 @@
   match_ouKey/1,
   match_auKey/1,
   getuser/1,
+  updateprofile/2,
   encrypt/3,
   dencrypt/3,
   checkuser/2
@@ -52,6 +52,8 @@ match_auKey(AUkey) -> gen_server:call(?MODULE, {match_auKey, AUkey}).
 
 getuser(Ukey) -> gen_server:call(?MODULE, {getuser, Ukey}).
 
+updateprofile(Ukey, KeyValList) -> gen_server:call(?MODULE, {updateprofile, Ukey, KeyValList}).
+
 encrypt(Ukey, IVec, Text) ->
   {ok, Secret} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":secret"])]),
   {ok, crypto:des_cbc_encrypt(Secret, IVec, Text)}.
@@ -71,22 +73,21 @@ init([]) ->
 
 handle_call({register, Email, Password}, _From, State) ->
   MD5Key = hash_md5:build(Email),
-  OUKey = hashPass(MD5Key, "openkey", 2),
+  OpenSalt = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
+  OUKey = hashPass(MD5Key, OpenSalt, 2),
   Secret = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
   Salt = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
-  case qredis:q(["GET", lists:concat(["datasmart:users:", MD5Key, ":profile"])]) of
-    {ok, undefined} ->
-      qredis:q(["SET", lists:concat(["datasmart:users:", MD5Key, ":profile"]), jiffy:encode({[
-        {email, Email}
-      ]})]),
+  case qredis:q(["HGETALL", lists:concat(["datasmart:users:", MD5Key, ":profile"])]) of
+    {ok, []} ->
+      qredis:q(["HSET", lists:concat(["datasmart:users:", MD5Key, ":profile"]), "email", Email]),
       qredis:q(["SET", lists:concat(["datasmart:openkey:", OUKey]), MD5Key]),
       qredis:q(["SET", lists:concat(["datasmart:users:", MD5Key, ":password"]), hashPass(Password, Salt, 20)]),
       qredis:q(["SET", lists:concat(["datasmart:users:", MD5Key, ":salt"]), Salt]),
       qredis:q(["SET", lists:concat(["datasmart:users:", MD5Key, ":secret"]), Secret]),
-      qredis:q(["HSET", "datasmart:alias", Email, Email]),
-      qredis:q(["HSET", "datasmart:alias:keys", Email, MD5Key]),
-      {reply, {ok, [ {email, Email}, {ukey, MD5Key} ]}, State};
-    _ -> {reply, {error, "Registration Failure"}, State}
+      qredis:q(["HSETNX", "datasmart:alias", Email, Email]),
+      qredis:q(["HSETNX", "datasmart:alias:keys", Email, MD5Key]),
+      {reply, {ok, [{email, list_to_binary(Email)}, {oukey, list_to_binary(OUKey)}]}, State};
+    _ -> {reply, {error, "Registration Failure, User Exists"}, State}
   end;
 
 handle_call({getukey, Email}, _From, State) ->
@@ -100,6 +101,9 @@ handle_call({match_auKey, AUkey}, _From, State) ->
 
 handle_call({getuser, Ukey}, _From, State) ->
   {reply, doGetUser(Ukey), State};
+
+handle_call({updateprofile, Ukey, KeyValList}, _From, State) ->
+  {reply, doUpdateProfile(Ukey, KeyValList), State};
 
 handle_call({checkuser, Email, Password}, _From, State) ->
   {reply, doCheckuser(Email, Password), State}.
@@ -161,19 +165,31 @@ doMatchAUKey(AUKey) ->
   end.
 
 doGetUser(Ukey) ->
-  case qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":profile"])]) of
+  case qredis:q(["HGETALL", lists:concat(["datasmart:users:", Ukey, ":profile"])]) of
     {ok, Result} ->
-      {Json} = jiffy:decode(Result),
+      Json = ds_util:list_to_keyval(Result),
+      User = [{binary_to_atom(Key, utf8), Val} || {Key, Val} <- Json],
+      {ok, User};
+    _ -> {error, "No User was Found"}
+  end.
+
+doUpdateProfile(Ukey, KeyValList) ->
+  case qredis:q(["HEXISTS", lists:concat(["datasmart:users:", Ukey, ":profile"]), "email"]) of
+    {ok, 1} ->
+      [qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":profile"]), Key, Val]) ||
+        {Key, Val} <- KeyValList],
+      {ok, List} = qredis:q(["HGETALL", lists:concat(["datasmart:users:", Ukey, ":profile"])]),
+      Json = ds_util:list_to_keyval(List),
       User = [{binary_to_atom(Key, utf8), Val} || {Key, Val} <- Json],
       {ok, User};
     _ -> {error, "No User was Found"}
   end.
 
 hashPass(Password, Salt, 0) ->
-  hash_md5:build( lists:concat([Password, Salt]) );
+  hash_md5:build(lists:concat([Password, Salt]));
 
 hashPass(Password, Salt, Factor) when (Factor rem 2) > 0 ->
-  hashPass(hash_md5:build( lists:concat([Password, Salt]) ), Salt, Factor - 1 );
+  hashPass(hash_md5:build(lists:concat([Password, Salt])), Salt, Factor - 1);
 
 hashPass(Password, Salt, Factor) ->
-  hashPass(hash_md5:build( lists:concat([Salt, Password]) ), Salt, Factor - 1 ).
+  hashPass(hash_md5:build(lists:concat([Salt, Password])), Salt, Factor - 1).
