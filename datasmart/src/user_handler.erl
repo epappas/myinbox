@@ -35,6 +35,25 @@ maybe_response(<<"GET">>, Req) ->
       ]}), Req)
   end;
 
+maybe_response(<<"POST">>, Req) ->
+  {ok, Params, Req2} = cowboy_req:body_qs(Req),
+
+  EmailBin = proplists:get_value(<<"email">>, Params),
+  PasswordBin = proplists:get_value(<<"password">>, Params),
+
+  Email = binary:bin_to_list(EmailBin),
+  Password = binary:bin_to_list(PasswordBin),
+  case handle_query({register, Email, Password}, Req2) of
+    {ok, Resp, _} ->
+      echo(200, jiffy:encode({Resp}), Req2);
+    _ ->
+      echo(400, jiffy:encode({[
+        {code, 400},
+        {status, error},
+        {error, "Uknown Error"}
+      ]}), Req)
+  end;
+
 maybe_response(_, Req) ->
   echo(405, jiffy:encode({[
     {code, 405},
@@ -45,7 +64,11 @@ maybe_response(_, Req) ->
 handle_query({userinfo, OUkey}, Req) ->
   {ok, Ukey} = user_server:match_ouKey(OUkey),
   {ok, UProfile} = user_server:getuser(Ukey),
-  {info, ensureUUProfileJson(UProfile), Req}.
+  {info, ensureUUProfileJson(UProfile), Req};
+
+handle_query({register, Email, Password}, Req) ->
+  {ok, Registred} = user_server:register(Email, Password),
+  {ok, Registred, Req}.
 
 echo(Status, Echo, Req) ->
   cowboy_req:reply(Status, [
