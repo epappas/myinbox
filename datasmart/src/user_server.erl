@@ -55,11 +55,22 @@ getuser(Ukey) -> gen_server:call(?MODULE, {getuser, Ukey}).
 updateprofile(Ukey, KeyValList) -> gen_server:call(?MODULE, {updateprofile, Ukey, KeyValList}).
 
 encrypt(Ukey, IVec, Text) ->
-  {ok, Secret} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":secret"])]),
-  {ok, crypto:des_cbc_encrypt(Secret, IVec, Text)}.
+  {ok, SecretBin} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":secret"])]),
+  SecretList = binary_to_list(SecretBin),
+  Secret = lists:sublist(SecretList, 8),
+  IvacBin = list_to_binary(case is_binary(IVec) of
+    false -> lists:sublist(IVec, 8);
+    true -> lists:sublist(list_to_binary(IVec), 8)
+  end),
+  TextChecked = case length(Text) rem 8 of
+    0 -> Text;
+    N -> Text ++ [" " || _S <- lists:seq(1, 8 - N)]
+  end,
+  {ok, crypto:des_cbc_encrypt(Secret, IvacBin, TextChecked)}.
 
 dencrypt(Ukey, IVec, Text) ->
-  {ok, Secret} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":secret"])]),
+  {ok, SecretBin} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":secret"])]),
+  Secret = binary_to_list(SecretBin),
   {ok, crypto:des_cbc_decrypt(Secret, IVec, Text)}.
 
 checkuser(Email, Password) -> gen_server:call(?MODULE, {checkuser, Email, Password}).
