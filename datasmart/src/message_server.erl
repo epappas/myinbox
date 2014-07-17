@@ -93,7 +93,7 @@ handle_cast({store, MessageID, Ukey, Message}, State) ->
   qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:copydrip"]), MessageID, Copydrip]),
   qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), MessageID, From]),
   qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:ivec"]), MessageID, IVec]),
-  qredis:q(["SADD", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), Now, MessageID]),
+  qredis:q(["ZADD", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), Now, MessageID]),
 
   {noreply, State};
 
@@ -146,7 +146,7 @@ fetchMsginfo(MessageID, Ukey) ->
   {ok, From} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), MessageID]),
   {ok, IVec} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:ivec"]), MessageID]),
   {ok, Email} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":profile"]), "email"]),
-  {ok, Timestamp} = qredis:q(["ZSCORE", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), MessageID]),
+  {ok, Timestamp} = {ok, 0}, %% qredis:q(["ZSCORE", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), MessageID]),
 
 %% TODO Fetch Date from the List
   Decompressed = doUncompress(Compressed),
