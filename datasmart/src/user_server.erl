@@ -60,7 +60,7 @@ encrypt(Ukey, IVec, Text) ->
   Secret = lists:sublist(SecretList, 8),
   IvacBin = list_to_binary(case is_binary(IVec) of
     false -> lists:sublist(IVec, 8);
-    true -> lists:sublist(list_to_binary(IVec), 8)
+    true -> lists:sublist(binary_to_list(IVec), 8)
   end),
   TextChecked = case length(Text) rem 8 of
     0 -> Text;
@@ -70,8 +70,13 @@ encrypt(Ukey, IVec, Text) ->
 
 dencrypt(Ukey, IVec, Text) ->
   {ok, SecretBin} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":secret"])]),
-  Secret = binary_to_list(SecretBin),
-  {ok, crypto:des_cbc_decrypt(Secret, IVec, Text)}.
+  SecretList = binary_to_list(SecretBin),
+  Secret = lists:sublist(SecretList, 8),
+  IvacBin = list_to_binary(case is_binary(IVec) of
+                             false -> lists:sublist(IVec, 8);
+                             true -> lists:sublist(binary_to_list(IVec), 8)
+                           end),
+  {ok, crypto:des_cbc_decrypt(Secret, IvacBin, Text)}.
 
 checkuser(Email, Password) -> gen_server:call(?MODULE, {checkuser, Email, Password}).
 
