@@ -34,7 +34,7 @@ start_link() ->
 
 %%% Routing
 compile() ->
-  List = [root_handler],
+  List = [root_handler, index_handler, user_handler, message_handler, inbox_handler, status_handler],
   cowboy_router:compile([
     %% {URIHost, list({URIPath, Handler, Opts})}
     {'_', [route(Name) || Name <- List]}
@@ -52,7 +52,7 @@ route(user_handler) ->
 route(message_handler) ->
   {"/message", message_handler, []};
 
-route(status_handler) ->
+route(inbox_handler) ->
   {"/inbox", inbox_handler, []};
 
 route(status_handler) ->
