@@ -62,25 +62,45 @@ server.on('after', restify.auditLogger({
     })
 }));
 
-//server.on('uncaughtException', function (req, res, route, err) {
-//
-//});
-//
-//server.on('UnsupportedMediaType', function (req, res, route, err) {
-//
-//});
-//
-//server.on('VersionNotAllowed', function (req, res, route, err) {
-//
-//});
-//
-//server.on('MethodNotAllowed', function (req, res, route, err) {
-//
-//});
-//
-//server.on('MethodNotAllowed', function (req, res, route, err) {
-//
-//});
+server.on('uncaughtException', function (req, res, route, err) {
+    logger.error('uncaughtException', err.code || 500, route, req.params, err);
+    res.send({
+        error: err.code || 500,
+        error_description: err.status || err.message || err.description || 'Internal Server Error',
+        error_uri: '',
+        state: req.param.state || req.body.state || undefined
+    });
+});
+
+server.on('UnsupportedMediaType', function (req, res, route, err) {
+    logger.error('UnsupportedMediaType', err.code || 415, route, req.params, err);
+    res.send({
+        error: err.code || 415,
+        error_description: err.status || err.message || err.description || 'Unsupported media type',
+        error_uri: '',
+        state: req.param.state || req.body.state || undefined
+    });
+});
+
+server.on('VersionNotAllowed', function (req, res, route, err) {
+    logger.error('VersionNotAllowed', err.code || 505, route, req.params, err);
+    res.send({
+        error: err.code || 505,
+        error_description: err.status || err.message || err.description || 'Version Not Supported',
+        error_uri: '',
+        state: req.param.state || req.body.state || undefined
+    });
+});
+
+server.on('MethodNotAllowed', function (req, res, route, err) {
+    logger.error('MethodNotAllowed', err.code || 405, route, req.params, err);
+    res.send({
+        error: err.code || 405,
+        error_description: err.status || err.message || err.description || 'Method not allowed',
+        error_uri: '',
+        state: req.param.state || req.body.state || undefined
+    });
+});
 
 server.listen(conf.get('port'), function () {
     console.log('%s listening at %s', server.name, server.url)
