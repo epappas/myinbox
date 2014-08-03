@@ -21,11 +21,15 @@ handle(Req, State) ->
   {ok, Req3, State}.
 
 maybe_response(<<"GET">>, Req) ->
-  {OUkey, Req2} = cowboy_req:qs_val(<<"user">>, Req),
+  {OUkeyBin, Req2} = cowboy_req:qs_val(<<"user">>, Req),
+
+  OUkey = binary:bin_to_list(OUkeyBin),
+
   case handle_query({userinfo, OUkey}, Req2) of
     {info, UProfile, _} ->
+      io:format("Profile: ~p", [UProfile]),
       echo(200, jiffy:encode({[
-        {profile, UProfile}
+        {profile, {UProfile}}
       ]}), Req2);
     _ ->
       echo(400, jiffy:encode({[
