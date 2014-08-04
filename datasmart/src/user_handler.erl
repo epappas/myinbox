@@ -21,22 +21,75 @@ handle(Req, State) ->
   {ok, Req3, State}.
 
 maybe_response(<<"GET">>, Req) ->
-  {OUkeyBin, Req2} = cowboy_req:qs_val(<<"user">>, Req),
+  {OUkeyBin, Req2} = cowboy_req:qs_val(<<"oukey">>, Req),
+  {OUnameBin, Req2} = cowboy_req:qs_val(<<"uname">>, Req),
+  {OPassBin, Req2} = cowboy_req:qs_val(<<"pass">>, Req),
+  {OApiKeyBin, Req2} = cowboy_req:qs_val(<<"apiKey">>, Req),
+  {OSecretBin, Req2} = cowboy_req:qs_val(<<"secret">>, Req),
 
-  OUkey = binary:bin_to_list(OUkeyBin),
+  FetchUsrInfo = fun(OUkey, MyReq) ->
+    case handle_query({userinfo, OUkey}, MyReq) of
+      {info, UProfile, _} ->
+        echo(200, jiffy:encode({[
+          {profile, {UProfile}}
+        ]}), MyReq);
+      _ ->
+        echo(400, jiffy:encode({[
+          {code, 400},
+          {status, error},
+          {error, "Uknown Error"}
+        ]}), MyReq)
+    end
+  end,
 
-  case handle_query({userinfo, OUkey}, Req2) of
-    {info, UProfile, _} ->
-      io:format("Profile: ~p", [UProfile]),
-      echo(200, jiffy:encode({[
-        {profile, {UProfile}}
-      ]}), Req2);
-    _ ->
+  case {OUkeyBin, OUnameBin, OApiKeyBin} of
+    {undefined, undefined, undefined} ->
       echo(400, jiffy:encode({[
         {code, 400},
         {status, error},
-        {error, "Uknown Error"}
-      ]}), Req)
+        {error, "No Valid Arguments"}
+      ]}), Req);
+    {OUkeyBin, undefined, undefined} ->
+      OUkey = binary:bin_to_list(OUkeyBin),
+      FetchUsrInfo(OUkey, Req2);
+    {undefined, OUnameBin, undefined} ->
+      OUname = binary:bin_to_list(OUnameBin),
+      OPass = binary:bin_to_list(OPassBin),
+
+      case user_server:checkuser(OUname, OPass) of
+        {ok, Ukey} ->
+          {ok, UProfile} = user_server:getuser(Ukey),
+          %% {info, ensureUUProfileJson(UProfile), Req};
+          echo(200, jiffy:encode({[
+            {profile, {UProfile}}
+          ]}), Req2);
+        {error, _} ->
+          echo(400, jiffy:encode({[
+            {code, 400},
+            {status, error},
+            {error, "No Valid Arguments"}
+          ]}), Req)
+      end;
+    {undefined, undefined, OApiKeyBin} ->
+      OApiKey = binary:bin_to_list(OApiKeyBin),
+      OSecret = binary:bin_to_list(OSecretBin),
+
+      case user_server:checkuser(OApiKey, OSecret) of
+        {ok, Ukey} ->
+          {ok, UProfile} = user_server:getuser(Ukey),
+          %% {info, ensureUUProfileJson(UProfile), Req};
+          echo(200, jiffy:encode({[
+            {profile, {UProfile}}
+          ]}), Req2);
+        {error, _} ->
+          echo(400, jiffy:encode({[
+            {code, 400},
+            {status, error},
+            {error, "No Valid Arguments"}
+          ]}), Req)
+      end
+  %% TODO Fetch OUKey
+  %% FetchUsrInfo(OUkey, Req2)
   end;
 
 maybe_response(<<"POST">>, Req) ->

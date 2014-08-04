@@ -15,7 +15,7 @@
   register/2,
   getukey/1,
   match_ouKey/1,
-  match_auKey/1,
+  match_auKey/2,
   getuser/1,
   updateprofile/2,
   encrypt/3,
@@ -48,9 +48,11 @@ getukey(Email) -> gen_server:call(?MODULE, {getukey, Email}).
 
 match_ouKey(OUkey) -> gen_server:call(?MODULE, {match_ouKey, OUkey}).
 
-match_auKey(AUkey) -> gen_server:call(?MODULE, {match_auKey, AUkey}).
+match_auKey(AUkey, Secret) -> gen_server:call(?MODULE, {match_auKey, AUkey, Secret}).
 
 getuser(Ukey) -> gen_server:call(?MODULE, {getuser, Ukey}).
+
+checkuser(Email, Password) -> gen_server:call(?MODULE, {checkuser, Email, Password}).
 
 updateprofile(Ukey, KeyValList) -> gen_server:call(?MODULE, {updateprofile, Ukey, KeyValList}).
 
@@ -77,8 +79,6 @@ dencrypt(Ukey, IVec, Text) ->
                              true -> lists:sublist(binary_to_list(IVec), 8)
                            end),
   {ok, crypto:des_cbc_decrypt(Secret, IvacBin, Text)}.
-
-checkuser(Email, Password) -> gen_server:call(?MODULE, {checkuser, Email, Password}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -112,8 +112,8 @@ handle_call({getukey, Email}, _From, State) ->
 handle_call({match_ouKey, OUkey}, _From, State) ->
   {reply, doMatchOUKey(OUkey), State};
 
-handle_call({match_auKey, AUkey}, _From, State) ->
-  {reply, doMatchAUKey(AUkey), State};
+handle_call({match_auKey, AUkey, Secret}, _From, State) ->
+  {reply, doMatchAUKey(AUkey, Secret), State};
 
 handle_call({getuser, Ukey}, _From, State) ->
   {reply, doGetUser(Ukey), State};
@@ -148,8 +148,8 @@ doCheckuser(Email, Password) ->
         {ok, BSalt} ->
           Salt = binary_to_list(BSalt),
           HashPass = hashPass(Password, Salt, 20),
-          {ok, User} = doGetUser(Ukey),
-          UserPass = proplists:get_value(password, User),
+          {ok, PassBin} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":password"])]),
+          UserPass = binary_to_list(PassBin),
           case UserPass =:= HashPass of
             true -> {ok, Ukey};
             false -> {error, false}
@@ -173,10 +173,24 @@ doMatchOUKey(OUKey) ->
     _ -> {error, "Uknown Key"}
   end.
 
-doMatchAUKey(AUKey) ->
-  case qredis:q(["GET", lists:concat(["datasmart:acesskey:", AUKey])]) of
+doMatchAUKey(AUKey, Secret) ->
+  case qredis:q(["GET", lists:concat(["datasmart:acesskey:", AUKey, ":ukey"])]) of
     {ok, undefined} -> {error, "Uknown Key"};
-    {ok, Ukey} -> {ok, binary_to_list(Ukey)};
+    {ok, UkeyBin} ->
+      Ukey = {ok, binary_to_list(UkeyBin)},
+      case qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":salt"])]) of
+        {ok, undefined} -> {error, "Wrong User Details"};
+        {ok, BSalt} ->
+          Salt = binary_to_list(BSalt),
+          HashSecret = hashPass(Secret, Salt, 20),
+          {ok, StoredSecretBin} = qredis:q(["GET", lists:concat(["datasmart:acesskey:", AUKey, ":secret"])]),
+          StoredSecret = binary_to_list(StoredSecretBin),
+          case StoredSecret =:= HashSecret of
+            true -> {ok, Ukey};
+            false -> {error, false}
+          end;
+        _ -> {error, "Something Went wrong getting User's Details"}
+      end;
     _ -> {error, "Uknown Key"}
   end.
 
