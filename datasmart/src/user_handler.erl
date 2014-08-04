@@ -95,20 +95,37 @@ maybe_response(<<"GET">>, Req) ->
 maybe_response(<<"POST">>, Req) ->
   {ok, Params, Req2} = cowboy_req:body_qs(Req),
 
+  OApiKeyBin = proplists:get_value(<<"apiKey">>, Params),
+  OSecretBin = proplists:get_value(<<"secret">>, Params),
   EmailBin = proplists:get_value(<<"email">>, Params),
   PasswordBin = proplists:get_value(<<"password">>, Params),
 
-  Email = binary:bin_to_list(EmailBin),
-  Password = binary:bin_to_list(PasswordBin),
-  case handle_query({register, Email, Password}, Req2) of
-    {ok, Resp, _} ->
-      echo(200, jiffy:encode({Resp}), Req2);
-    _ ->
+  case {OApiKeyBin, EmailBin} of
+    {undefined, undefined} ->
       echo(400, jiffy:encode({[
         {code, 400},
         {status, error},
-        {error, "Uknown Error"}
-      ]}), Req)
+        {error, "No Valid Arguments"}
+      ]}), Req);
+    {OApiKeyBin, undefined} ->
+      OApiKey = binary:bin_to_list(OApiKeyBin),
+      OSecret = binary:bin_to_list(OSecretBin);
+
+
+    {undefined, EmailBin} ->
+      Email = binary:bin_to_list(EmailBin),
+      Password = binary:bin_to_list(PasswordBin),
+
+      case handle_query({register, Email, Password}, Req2) of
+        {ok, Resp, _} ->
+          echo(200, jiffy:encode({Resp}), Req2);
+        _ ->
+          echo(400, jiffy:encode({[
+            {code, 400},
+            {status, error},
+            {error, "Uknown Error"}
+          ]}), Req)
+      end
   end;
 
 maybe_response(_, Req) ->

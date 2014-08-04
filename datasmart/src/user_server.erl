@@ -13,6 +13,7 @@
 %% API
 -export([start_link/0,
   register/2,
+  add_aukey/3,
   getukey/1,
   match_ouKey/1,
   match_auKey/2,
@@ -43,6 +44,8 @@ start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 register(Email, Password) -> gen_server:call(?MODULE, {register, Email, Password}).
+
+add_aukey(Ukey, AUKey, Secret) -> gen_server:call(?MODULE, {addapikey, Ukey, AUKey, Secret}).
 
 getukey(Email) -> gen_server:call(?MODULE, {getukey, Email}).
 
@@ -105,6 +108,17 @@ handle_call({register, Email, Password}, _From, State) ->
       {reply, {ok, [{email, list_to_binary(Email)}, {oukey, list_to_binary(OUKey)}]}, State};
     _ -> {reply, {error, "Registration Failure, User Exists"}, State}
   end;
+
+handle_call({addaukey, Ukey, AUKey, Secret}, _From, State) ->
+  {ok, BSalt} = qredis:q(["GET", lists:concat(["datasmart:users:", Ukey, ":salt"])]),
+  Salt = binary_to_list(BSalt),
+
+  qredis:q(["SET", lists:concat(["datasmart:acesskey:", AUKey, ":ukey"]), Ukey]),
+
+  HashSecret = hashPass(Secret, Salt, 20),
+  qredis:q(["SET", lists:concat(["datasmart:acesskey:", AUKey, ":secret"]), HashSecret]),
+
+  {reply, {ok, [{ukey, Ukey}, {aukey, AUKey}, {secret, Secret}]}, State};
 
 handle_call({getukey, Email}, _From, State) ->
   {reply, doGetukey(Email), State};
