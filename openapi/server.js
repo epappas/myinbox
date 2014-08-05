@@ -6,17 +6,21 @@ var fs = require('fs');
 var path = require('path');
 var restify = require('restify');
 var responseTime = require('response-time');
+var winston = require('winston');
 
 var conf = require('./config');
 var redisTrait = require('./helpers/redis');
 
 var redis = redisTrait.redis;
+var logger = bunyan.createLogger({
+    name: 'audit',
+    stream: process.stdout
+});
+
+// HTTP Server
 var server = restify.createServer({
     name: 'my-api',
-    log: bunyan.createLogger({
-        name: 'audit',
-        stream: process.stdout
-    }),
+    log: logger,
     version: conf.get('version')
 });
 
@@ -52,15 +56,6 @@ server.use(function (req, res, next) {
     next();
 });
 
-require('./routes/api')(server, redis);
-
-
-server.on('after', restify.auditLogger({
-    log: bunyan.createLogger({
-        name: 'audit',
-        stream: process.stdout
-    })
-}));
 
 server.on('uncaughtException', function (req, res, route, err) {
     logger.error('uncaughtException', err.code || 500, route, req.params, err);
@@ -72,15 +67,6 @@ server.on('uncaughtException', function (req, res, route, err) {
     });
 });
 
-server.on('UnsupportedMediaType', function (req, res, route, err) {
-    logger.error('UnsupportedMediaType', err.code || 415, route, req.params, err);
-    res.send({
-        error: err.code || 415,
-        error_description: err.status || err.message || err.description || 'Unsupported media type',
-        error_uri: '',
-        state: req.param.state || req.body.state || undefined
-    });
-});
 
 server.on('VersionNotAllowed', function (req, res, route, err) {
     logger.error('VersionNotAllowed', err.code || 505, route, req.params, err);
@@ -92,15 +78,9 @@ server.on('VersionNotAllowed', function (req, res, route, err) {
     });
 });
 
-server.on('MethodNotAllowed', function (req, res, route, err) {
-    logger.error('MethodNotAllowed', err.code || 405, route, req.params, err);
-    res.send({
-        error: err.code || 405,
-        error_description: err.status || err.message || err.description || 'Method not allowed',
-        error_uri: '',
-        state: req.param.state || req.body.state || undefined
-    });
-});
+server.on('after', restify.auditLogger({
+    log: logger
+}));
 
 server.listen(conf.get('port'), function () {
     console.log('%s listening at %s', server.name, server.url)
