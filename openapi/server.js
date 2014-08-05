@@ -9,8 +9,9 @@ var responseTime = require('response-time');
 var winston = require('winston');
 
 var conf = require('./config');
-var redisTrait = require('./helpers/redis');
+var redisTrait = require('./modules/redis');
 
+// Global redis instance
 var redis = redisTrait.redis;
 var logger = bunyan.createLogger({
     name: 'audit',
