@@ -88,8 +88,6 @@ maybe_response(<<"GET">>, Req) ->
             {error, "No Valid Arguments"}
           ]}), Req)
       end
-  %% TODO Fetch OUKey
-  %% FetchUsrInfo(OUkey, Req2)
   end;
 
 maybe_response(<<"POST">>, Req) ->
@@ -97,6 +95,7 @@ maybe_response(<<"POST">>, Req) ->
 
   OApiKeyBin = proplists:get_value(<<"apiKey">>, Params),
   OSecretBin = proplists:get_value(<<"secret">>, Params),
+  OUkeyBin = proplists:get_value(<<"oukey">>, Params),
   EmailBin = proplists:get_value(<<"email">>, Params),
   PasswordBin = proplists:get_value(<<"password">>, Params),
 
@@ -109,8 +108,20 @@ maybe_response(<<"POST">>, Req) ->
       ]}), Req);
     {OApiKeyBin, undefined} ->
       OApiKey = binary:bin_to_list(OApiKeyBin),
-      OSecret = binary:bin_to_list(OSecretBin);
+      OSecret = binary:bin_to_list(OSecretBin),
+      OUkey = binary:bin_to_list(OUkeyBin),
 
+      {ok, Ukey} = user_server:match_ouKey(OUkey),
+
+      case user_server:add_aukey(Ukey, OApiKey, OSecret) of
+        {ok, Resp} -> echo(200, jiffy:encode({Resp}), Req2);
+        _ ->
+          echo(400, jiffy:encode({[
+            {code, 400},
+            {status, error},
+            {error, "Uknown Error"}
+          ]}), Req)
+      end;
 
     {undefined, EmailBin} ->
       Email = binary:bin_to_list(EmailBin),
