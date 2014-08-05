@@ -53,7 +53,8 @@ server.use(restify.throttle({
 }));
 server.use(function (req, res, next) {
     res.header('X-Powered-By', 'MyInbox-API');
-    res.header('Server', "api.myinbox.com");
+    res.header('X-Request-ID', req.id());
+    res.header('Server', 'api.myinbox.com');
     next();
 });
 
@@ -69,15 +70,7 @@ server.on('uncaughtException', function (req, res, route, err) {
 });
 
 
-server.on('VersionNotAllowed', function (req, res, route, err) {
-    logger.error('VersionNotAllowed', err.code || 505, route, req.params, err);
-    res.send({
-        error: err.code || 505,
-        error_description: err.status || err.message || err.description || 'Version Not Supported',
-        error_uri: '',
-        state: req.param.state || req.body.state || undefined
-    });
-});
+require('./modules/reqtracker')(server, winston);
 
 server.on('after', restify.auditLogger({
     log: logger
