@@ -75,6 +75,7 @@ handle_call(_Request, _From, State) ->
 
 handle_cast({store, MessageID, Ukey, Message}, State) ->
   Now = ds_util:timestamp(),
+  SecretId = hashPass(MessageID, Ukey, 4),
   IVec = uuid:to_string(uuid:uuid3(uuid:uuid4(), uuid:to_string(uuid:uuid1()))),
   Body = proplists:get_value(body, Message),
   Copydrip = string:substr(Body, 1, 20),
@@ -87,12 +88,12 @@ handle_cast({store, MessageID, Ukey, Message}, State) ->
   In64 = base64:encode_to_string(Encrypted),
   Compressed = doCompress(In64),
 
-  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:messages"]), MessageID, Compressed]),
-  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:meta"]), MessageID, MetaJson]),
-  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:subject"]), MessageID, Subject]),
-  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:copydrip"]), MessageID, Copydrip]),
-  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), MessageID, From]),
-  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:ivec"]), MessageID, IVec]),
+  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:messages"]), SecretId, Compressed]),
+  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:meta"]), SecretId, MetaJson]),
+  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:subject"]), SecretId, Subject]),
+  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:copydrip"]), SecretId, Copydrip]),
+  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), SecretId, From]),
+  qredis:q(["HSET", lists:concat(["datasmart:users:", Ukey, ":inbox:ivec"]), SecretId, IVec]),
   qredis:q(["ZADD", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), Now, MessageID]),
 
   {noreply, State};
@@ -126,9 +127,10 @@ fetchMsgList(listbydate, Ukey, FromTS, ToTS) ->
   {ok, Result} = qredis:q(["ZREVRANGEBYSCORE", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), FromTS, ToTS]),
   KeyValList = ds_util:list_to_keyval_rev(Result),
   FoldedList = lists:foldl(fun({Timestamp, MessageID}, AccIn) ->
-    {ok, Subject} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:subject"]), MessageID]),
-    {ok, From} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), MessageID]),
-    {ok, Copydrip} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:copydrip"]), MessageID]),
+    SecretId = hashPass(MessageID, Ukey, 4),
+    {ok, Subject} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:subject"]), SecretId]),
+    {ok, From} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), SecretId]),
+    {ok, Copydrip} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:copydrip"]), SecretId]),
     AccIn ++ [
       {datetime, Timestamp},
       {messageID, MessageID},
@@ -140,15 +142,15 @@ fetchMsgList(listbydate, Ukey, FromTS, ToTS) ->
   {FoldedList}.
 
 fetchMsginfo(MessageID, Ukey) ->
-  {ok, Compressed} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:messages"]), MessageID]),
-  {ok, MetaJson} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:meta"]), MessageID]),
-  {ok, Subject} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:subject"]), MessageID]),
-  {ok, From} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), MessageID]),
-  {ok, IVec} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:ivec"]), MessageID]),
+  SecretId = hashPass(MessageID, Ukey, 4),
+  {ok, Compressed} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:messages"]), SecretId]),
+  {ok, MetaJson} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:meta"]), SecretId]),
+  {ok, Subject} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:subject"]), SecretId]),
+  {ok, From} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:sender"]), SecretId]),
+  {ok, IVec} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":inbox:ivec"]), SecretId]),
   {ok, Email} = qredis:q(["HGET", lists:concat(["datasmart:users:", Ukey, ":profile"]), "email"]),
-  {ok, Timestamp} = {ok, 0}, %% qredis:q(["ZSCORE", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), MessageID]),
+  {ok, Timestamp} = qredis:q(["ZSCORE", lists:concat(["datasmart:users:", Ukey, ":inbox:list"]), MessageID]),
 
-%% TODO Fetch Date from the List
   Decompressed = doUncompress(Compressed),
   Encrypted = base64:decode_to_string(Decompressed),
   {ok, Dencrypted} = user_server:dencrypt(Ukey, IVec, Encrypted),
@@ -162,3 +164,13 @@ fetchMsginfo(MessageID, Ukey) ->
     {body, Dencrypted},
     {meta, jiffy:decode(MetaJson)}
   ]}.
+
+
+hashPass(Password, Salt, 0) ->
+  hash_md5:build(lists:concat([Password, Salt]));
+
+hashPass(Password, Salt, Factor) when (Factor rem 2) > 0 ->
+  hashPass(hash_md5:build(lists:concat([Password, Salt])), Salt, Factor - 1);
+
+hashPass(Password, Salt, Factor) ->
+  hashPass(hash_md5:build(lists:concat([Salt, Password])), Salt, Factor - 1).
