@@ -47,8 +47,8 @@ maybe_response(_, Req) ->
 handle_query(OUkey, Req) ->
   {ok, Ukey} = user_server:match_ouKey(OUkey),
   case message_server:msgList(date, Ukey, ds_util:timestamp(), ds_util:timestamp() - (3600 * 24 * 1000)) of
-    {ok, {ok,{[]}}} -> {list, [], Req};
-    {ok, {ok,{InboxList}}} ->
+    {ok, {[]}} -> {list, [], Req};
+    {ok, {InboxList}} ->
       {list, [ensureInboxItemJson(Item) || Item <- InboxList], Req}
   end.
 

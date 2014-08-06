@@ -68,7 +68,7 @@ maybe_response(_, Req) ->
 
 handle_query({msginfo, OUkey, Messageid}, _, Req) ->
   {ok, Ukey} = user_server:match_ouKey(OUkey),
-  {ok, {ok, MessageJson}} = message_server:msginfo(Messageid, Ukey),
+  {ok, MessageJson} = message_server:msginfo(Messageid, Ukey),
   {message, ensureMessageJson(MessageJson), Req};
 
 handle_query({msgstore, OUkey, Messageid, Params}, _, Req) ->

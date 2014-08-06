@@ -37,22 +37,17 @@
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-store(MessageID, Ukey, Message) ->
-  gen_server:cast(?MODULE, {store, MessageID, Ukey, Message}),
-  {ok, MessageID}.
+%% {ok, MessageID}
+store(MessageID, Ukey, Message) -> gen_server:cast(?MODULE, {store, MessageID, Ukey, Message}).
 
-index(MessageID, Ukey, Message) ->
-  gen_server:call(?MODULE, {index, MessageID, Ukey, Message}),
-  {ok, MessageID}.
+%% {ok, MessageID}
+index(MessageID, Ukey, Message) -> gen_server:call(?MODULE, {index, MessageID, Ukey, Message}).
 
-msginfo(MessageID, Ukey) ->
-  {ok, gen_server:call(?MODULE, {msginfo, MessageID, Ukey})}.
+msginfo(MessageID, Ukey) -> gen_server:call(?MODULE, {msginfo, MessageID, Ukey}).
 
-msgList(date, Ukey, FromTS, ToTS) ->
-  {ok, gen_server:call(?MODULE, {listbydate, Ukey, FromTS, ToTS})};
+msgList(date, Ukey, FromTS, ToTS) -> gen_server:call(?MODULE, {listbydate, Ukey, FromTS, ToTS});
 
-msgList(numeric, Ukey, FromN, ToN) ->
-  {ok, gen_server:call(?MODULE, {listbynumeric, Ukey, FromN, ToN})}.
+msgList(numeric, Ukey, FromN, ToN) -> gen_server:call(?MODULE, {listbynumeric, Ukey, FromN, ToN}).
 
 %%%===================================================================
 %%% gen_server callbacks
