@@ -22,8 +22,23 @@ handle(Req, State) ->
 
 maybe_response(<<"GET">>, Req) ->
   {OUkeyBin, Req2} = cowboy_req:qs_val(<<"user">>, Req),
+  {FromBin, Req2} = cowboy_req:qs_val(<<"from">>, Req),
+  {ToBin, Req2} = cowboy_req:qs_val(<<"to">>, Req),
+  {ModeBin, Req2} = cowboy_req:qs_val(<<"mode">>, Req),
+
   OUkey = binary:bin_to_list(OUkeyBin),
-  case handle_query(OUkey, Req2) of
+  From = binary:bin_to_list(FromBin),
+  To = binary:bin_to_list(ToBin), %% ds_util:timestamp() - (3600 * 24 * 1000)
+  Mode = binary:bin_to_list(ModeBin),
+
+  FunFetch = fun(Mode) ->
+    case Mode of
+       "bydatetime" -> handle_query(bydatetime, {OUkey, From, To}, Req2);
+       "bypagination" -> handle_query(bypagination, {OUkey, From, To}, Req2)
+     end
+  end,
+
+  case FunFetch(Mode) of
     {list, MList, _} ->
       echo(200, jiffy:encode({[
         {status, ok},
@@ -44,9 +59,19 @@ maybe_response(_, Req) ->
     {error, "Method not allowed."}
   ]}), Req).
 
-handle_query(OUkey, Req) ->
+handle_query(bydatetime, {OUkey, From, To}, Req) ->
   {ok, Ukey} = user_server:match_ouKey(OUkey),
-  case message_server:msgList(date, Ukey, ds_util:timestamp(), ds_util:timestamp() - (3600 * 24 * 1000)) of
+
+  case message_server:msgList(date, Ukey, From, To) of
+    {ok, {[]}} -> {list, [], Req};
+    {ok, {InboxList}} ->
+      {list, [ensureInboxItemJson(Item) || Item <- InboxList], Req}
+  end;
+
+handle_query(bypagination, {OUkey, From, To}, Req) ->
+  {ok, Ukey} = user_server:match_ouKey(OUkey),
+
+  case message_server:msgList(numeric, Ukey, From, To) of
     {ok, {[]}} -> {list, [], Req};
     {ok, {InboxList}} ->
       {list, [ensureInboxItemJson(Item) || Item <- InboxList], Req}
