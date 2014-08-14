@@ -34,7 +34,7 @@ start_link() ->
 
 %%% Routing
 compile() ->
-  List = [root_handler, index_handler, user_handler, message_handler, inbox_handler, status_handler],
+  List = [root_handler, index_handler, user_handler, susr_handler, message_handler, inbox_handler, status_handler],
   cowboy_router:compile([
     %% {URIHost, list({URIPath, Handler, Opts})}
     {'_', [route(Name) || Name <- List]}
@@ -48,6 +48,9 @@ route(index_handler) ->
 
 route(user_handler) ->
   {"/user", user_handler, []};
+
+route(susr_handler) ->
+  {"/susr", susr_handler, []};
 
 route(message_handler) ->
   {"/message", message_handler, []};
@@ -76,6 +79,10 @@ init([]) ->
       {user_server, start_link, []},
       permanent, 1000, worker,
       [user_server]},
+    {susr_server,
+      {susr_server, start_link, []},
+      permanent, 1000, worker,
+      [susr_server]},
     {message_server,
       {message_server, start_link, []},
       permanent, 1000, worker,
