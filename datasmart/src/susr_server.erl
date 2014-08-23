@@ -45,7 +45,7 @@ start_link() ->
 
 register(Email, Password) -> gen_server:call(?MODULE, {register, Email, Password}).
 
-add_aukey(Ukey, AUKey, Secret) -> gen_server:call(?MODULE, {addapikey, Ukey, AUKey, Secret}).
+add_aukey(Ukey, AUKey, Secret) -> gen_server:call(?MODULE, {addaukey, Ukey, AUKey, Secret}).
 
 getukey(Email) -> gen_server:call(?MODULE, {getukey, Email}).
 
