@@ -11,15 +11,13 @@ function ReqTracker(server, logger) {
     server.pre(function (req, res, next) {
         async(function (logger, req) {
             logger.log('verbose', {
-                reqState: 'RECEIVED',
+                reqState: 'RECEIVED_HEAD',
                 env: process.env.NODE_ENV,
                 id: req.id(),
                 method: req.method,
                 url: req.url,
-                headers: _.omit(req.headers, 'authorization'),
-                query: _.omit(req.query, 'authorization'),
-                params: _.omit(req.params, 'authorization'),
-                body: _.omit(req.body, 'authorization'),
+                headers: JSON.stringify(_.omit(req.headers, 'authorization')),
+                query: _.omit((typeof req.query === 'function' ? req.query() : req.query ), 'authorization'),
                 route: req.route,
                 status: 'ok',
                 remoteAddress: req.connection.remoteAddress
@@ -28,7 +26,25 @@ function ReqTracker(server, logger) {
         next();
     });
 
+    server.use(function(req, res, next) {
+        async(function (logger, req) {
+            logger.log('verbose', {
+                reqState: 'RECEIVED_BODY',
+                id: req.id(),
+                env: process.env.NODE_ENV,
+                method: req.method,
+                url: req.url,
+                query: _.omit((typeof req.query === 'function' ? req.query() : req.query ), 'authorization'),
+                params: JSON.stringify(_.omit(req.params, 'authorization')),
+                body: JSON.stringify(_.omit(req.headers, 'authorization')),
+                status: 'ok'
+            });
+        }.bind(null, logger, req));
+        next();
+    });
+
     server.on('after', function (req, res, route, err) {
+        err = err || {};
         async(function (logger, req, res, route, err) {
             logger.log('verbose', {
                 reqState: 'RESPONDING',
@@ -36,19 +52,15 @@ function ReqTracker(server, logger) {
                 id: req.id(),
                 method: req.method,
                 url: req.url,
-                headers: _.omit(req.headers, 'authorization'),
-                query: _.omit(req.query, 'authorization'),
-                params: _.omit(req.params, 'authorization'),
-                body: _.omit(req.body, 'authorization'),
                 status: res.statusCode,
-                session: req.session,
                 rote: route,
-                error: err
+                error: JSON.stringify({message: err.message, stack: err.stack})
             });
         }.bind(null, logger, req, res, route, err));
     });
 
     server.on('uncaughtException', function (req, res, route, err) {
+        err = err || {};
         async(function (logger, req, res, route, err) {
             logger.log('error', {
                 reqState: 'EXCEPTION',
@@ -57,18 +69,18 @@ function ReqTracker(server, logger) {
                 method: req.method,
                 code: err.code || 500,
                 url: req.url,
-                headers: _.omit(req.headers, 'authorization'),
-                query: _.omit(req.query, 'authorization'),
-                params: _.omit(req.params, 'authorization'),
-                body: _.omit(req.body, 'authorization'),
+                headers: JSON.stringify(_.omit(req.headers, 'authorization')),
+                query: _.omit((typeof req.query === 'function' ? req.query() : req.query ), 'authorization'),
+                params: JSON.stringify(_.omit(req.params, 'authorization')),
                 route: route,
-                error: err,
+                error: JSON.stringify({message: err.message, stack: err.stack}),
                 status: 'ERROR',
                 type: 'uncaught_exception',
-                session: req.session,
                 remoteAddress: req.connection.remoteAddress
             });
         }.bind(null, logger, req, res, route, err));
+
+        console.error(err.message, err.stack);
 
         res.send(err.code || 500, {
             code: err.code || 500,
@@ -79,6 +91,7 @@ function ReqTracker(server, logger) {
     });
 
     server.on('UnsupportedMediaType', function (req, res, route, err) {
+        err = err || {};
         async(function (logger, req, res, route, err) {
             logger.log('warn', {
                 reqState: 'STOPPED',
@@ -87,15 +100,14 @@ function ReqTracker(server, logger) {
                 method: req.method,
                 code: err.code || 415,
                 url: req.url,
-                headers: _.omit(req.headers, 'authorization'),
-                query: _.omit(req.query, 'authorization'),
-                params: _.omit(req.params, 'authorization'),
-                body: _.omit(req.body, 'authorization'),
-                error: err,
+                headers: JSON.stringify(_.omit(req.headers, 'authorization')),
+                query: _.omit((typeof req.query === 'function' ? req.query() : req.query ), 'authorization'),
+                params: JSON.stringify(_.omit(req.params, 'authorization')),
+                body: JSON.stringify(_.omit(req.headers, 'authorization')),
+                error: JSON.stringify({message: err.message, stack: err.stack}),
                 route: route,
                 status: 'ERROR',
                 type: 'unsupported_mediatype',
-                session: req.session,
                 remoteAddress: req.connection.remoteAddress
             });
         }.bind(null, logger, req, res, route, err));
@@ -109,6 +121,7 @@ function ReqTracker(server, logger) {
     });
 
     server.on('VersionNotAllowed', function (req, res, route, err) {
+        err = err || {};
         async(function (logger, req, res, route, err) {
             logger.log('warn', {
                 reqState: 'STOPPED',
@@ -117,15 +130,14 @@ function ReqTracker(server, logger) {
                 method: req.method,
                 code: err.code || 505,
                 url: req.url,
-                headers: _.omit(req.headers, 'authorization'),
-                query: _.omit(req.query, 'authorization'),
-                params: _.omit(req.params, 'authorization'),
-                body: _.omit(req.body, 'authorization'),
+                headers: JSON.stringify(_.omit(req.headers, 'authorization')),
+                query: _.omit((typeof req.query === 'function' ? req.query() : req.query ), 'authorization'),
+                params: JSON.stringify(_.omit(req.params, 'authorization')),
+                body: JSON.stringify(_.omit(req.headers, 'authorization')),
                 route: route,
-                error: err,
+                error: JSON.stringify({message: err.message, stack: err.stack}),
                 status: 'ERROR',
                 type: 'version_not_allowed',
-                session: req.session,
                 remoteAddress: req.connection.remoteAddress
             });
         }.bind(null, logger, req, res, route, err));
@@ -139,6 +151,7 @@ function ReqTracker(server, logger) {
     });
 
     server.on('MethodNotAllowed', function (req, res, route, err) {
+        err = err || {};
         async(function (logger, req, res, route, err) {
             logger.log('warn', {
                 reqState: 'STOPPED',
@@ -147,15 +160,14 @@ function ReqTracker(server, logger) {
                 method: req.method,
                 code: err.code || 405,
                 url: req.url,
-                headers: _.omit(req.headers, 'authorization'),
-                query: _.omit(req.query, 'authorization'),
-                params: _.omit(req.params, 'authorization'),
-                body: _.omit(req.body, 'authorization'),
+                headers: JSON.stringify(_.omit(req.headers, 'authorization')),
+                query: _.omit((typeof req.query === 'function' ? req.query() : req.query ), 'authorization'),
+                params: JSON.stringify(_.omit(req.params, 'authorization')),
+                body: JSON.stringify(_.omit(req.headers, 'authorization')),
                 route: route,
-                error: err,
+                error: JSON.stringify({message: err.message, stack: err.stack}),
                 status: 'ERROR',
                 type: 'method_not_allowed',
-                session: req.session,
                 remoteAddress: req.connection.remoteAddress
             });
         }.bind(null, logger, req, res, route, err));
