@@ -82,12 +82,17 @@ function ReqTracker(server, logger) {
 
         console.error(err.message, err.stack);
 
-        res.send(err.code || 500, {
-            code: err.code || 500,
-            error_description: err.status || err.message || err.description || 'Internal Server Error',
-            error_uri: '',
-            state: req.params.state || req.body.state || undefined
-        });
+        try {
+            res.send(err.code || 500, {
+                code: err.code || 500,
+                error_description: err.status || err.message || err.description || 'Internal Server Error',
+                error_uri: '',
+                state: req.params.state || req.body.state || undefined
+            });
+        }
+        catch (e) {
+            // silence
+        }
     });
 
     server.on('UnsupportedMediaType', function (req, res, route, err) {
